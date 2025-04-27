@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "audio-transcription-pipeline"
+version = "0.1.0"
+description = "A modular audio processing pipeline for chunking, transcribing with WhisperX, and producing readable scripts."
+authors = [
+    { name="Your Name", email="your.email@example.com" }
+]
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "pydub>=0.25.1",
+    "srt>=3.5.2",
+    "tqdm>=4.64.1"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/bclement14/audio-transcription-summary-pipeline"
+"Repository" = "https://github.com/bclement14/audio-transcription-summary-pipeline"
