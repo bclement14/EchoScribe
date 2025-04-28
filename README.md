@@ -144,8 +144,7 @@ your_session/
 
 - 🧐 **LLM-based Summarization** (create rich summaries automatically)
 - 🛠 **Alternative models** beyond WhisperX
-- 🔥 **Real-time audio chunking and processing**
-
+- 🤖 **Direct Discord Integration** (with Craig Bot for starter)
 ---
 
 ## 🧑‍💻 License
