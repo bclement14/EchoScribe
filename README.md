@@ -1,14 +1,14 @@
-# 🎲 EchoScribes — Turn Your D&D Sessions into Living Stories 🎤 ➔ 📝
+# 🎲 EchoScribe — Turn Your D&D Sessions into Living Stories 🎤 ➔ 📝
 
 > Capture the magic of your tabletop adventures — from chaotic voices to polished, readable narratives.
 
 ---
 
-## 🧙‍♂️ What is EchoScribes?
+## 🧙‍♂️ What is EchoScribe?
 
-**EchoScribes** is a modular Python pipeline that transforms your **multi-speaker D&D session recordings** into structured, readable stories.
+**EchoScribe** is a modular Python pipeline that transforms your **multi-speaker D&D session recordings** into structured, readable stories.
 
-From messy audio files to a clean script, EchoScribes helps you:
+From messy audio files to a clean script, EchoScribe helps you:
 
 - Chunk long multi-speaker audio recordings (one track per speaker),
 - Transcribe chunks using WhisperX (via Docker),
@@ -20,13 +20,13 @@ From messy audio files to a clean script, EchoScribes helps you:
 
 ## 🎧 Context and Origin
 
-EchoScribes was born from real-world D&D sessions recorded over **Discord** using the **Craig bot**🐻.
+EchoScribe was born from real-world D&D sessions recorded over **Discord** using the **Craig bot**🐻.
 
 - Craig provides **individual speaker tracks** (one audio file per speaker) and optionally a **merged track**.
 - Early experiments tried using **merged tracks** + **WhisperX diarization** (speaker separation).
 - However, **speaker-specific tracks** produced significantly **better transcription quality**, even with long silences.
 
-As a result, EchoScribes is optimized to work best with **one audio track per speaker**, chunked with silence detection, and transcribed individually for clarity.
+As a result, EchoScribe is optimized to work best with **one audio track per speaker**, chunked with silence detection, and transcribed individually for clarity.
 
 > 📣 While diarization can be useful, this project currently favors the more accurate per-speaker track approach.
 
@@ -48,8 +48,8 @@ As a result, EchoScribes is optimized to work best with **one audio track per sp
 ### 1. Install the pipeline
 
 ```bash
-git clone https://github.com/yourusername/echoscribes.git
-cd echoscribes
+git clone https://github.com/yourusername/echoscribe.git
+cd echoscribe
 pip install -e .
 ```
 
@@ -71,7 +71,7 @@ your_session/
 ### 3. Run the pipeline
 
 ```python
-from echoscribes.pipeline import run_pipeline
+from echoscribe.pipeline import run_pipeline
 
 run_pipeline(
     base_path=".", 
@@ -112,7 +112,11 @@ No need to manually run Docker commands — the pipeline handles:
 Build the Docker image once:
 
 ```bash
-docker build -t echoscribes-whisperx .
+docker build -t echoscribe-whisperx .
+```
+If you want to launch the command mannualy with your audio files in "chunked_tracks/": 
+```bash
+docker docker run --gpus all -it -v "$(pwd):/app" --entrypoint whisperx echoscribe-whisperx --model large-v3 --language fr --output_dir wx_output --output_format json chunked_tracks/*.flac 
 ```
 
 ---
@@ -121,10 +125,11 @@ docker build -t echoscribes-whisperx .
 
 ```
 your_session/
-├── tracks/                     
+├── tracks/                 
+├── chunked_tracks/                  
 ├── wx_output/                  
 ├── json_files/                 
-├── srt_files/                  
+├── srt_files                  
 └── final_outputs/
     ├── merged_audio.flac       
     ├── cut_points.txt          
@@ -151,6 +156,6 @@ This project is open-source under the **MIT License**.
 
 # 📣 Join the Adventure!
 
-If you love D&D storytelling, AI-assisted narration, or just making life easier for your players and DMs — **EchoScribes is for you.**
+If you love D&D storytelling, AI-assisted narration, or just making life easier for your players and DMs — **EchoScribe is for you.**
 
 Contributions are welcome! ⚔️📜
