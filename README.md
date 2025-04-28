@@ -121,7 +121,7 @@ docker docker run --gpus all -it -v "$(pwd):/app" --entrypoint whisperx echoscri
 
 ---
 
-## 📂 Example Folder Structure
+## 📂 Example Final Folder Structure
 
 ```
 your_session/
@@ -150,7 +150,7 @@ your_session/
 
 ## 🧑‍💻 License
 
-This project is open-source under the **MIT License**.
+This project is open-source under the **GNU GENERAL PUBLIC LICENSE**.
 
 ---
 
