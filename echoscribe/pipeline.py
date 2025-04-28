@@ -1,13 +1,13 @@
-# audio_pipeline/pipeline.py
+# echoscribe/pipeline.py
 
 import os
 import subprocess
-from audio_pipeline.modules.treat_flac_tracks import chunk_audio
-from audio_pipeline.modules.correct_json_output import correct_whisperx_outputs
-from audio_pipeline.modules.convert_json_to_srt import convert_json_folder_to_srt
-from audio_pipeline.modules.merge_srt_by_chunk import merge_srt_by_chunk
-from audio_pipeline.modules.merge_speaker_entries import merge_speaker_entries
-from audio_pipeline.modules.convert_srt_to_script import srt_to_script
+from echoscribe.modules.treat_flac_tracks import chunk_audio
+from echoscribe.modules.correct_json_output import correct_whisperx_outputs
+from echoscribe.modules.convert_json_to_srt import convert_json_folder_to_srt
+from echoscribe.modules.merge_srt_by_chunk import merge_srt_by_chunk
+from echoscribe.modules.merge_speaker_entries import merge_speaker_entries
+from echoscribe.modules.convert_srt_to_script import srt_to_script
 
 WHISPERX_DOCKER_IMAGE = "echoscribe-whisperx"
 
