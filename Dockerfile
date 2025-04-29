@@ -31,7 +31,7 @@ RUN python -c "from huggingface_hub import snapshot_download; snapshot_download(
 ENV HUGGINGFACE_HUB_CACHE=/root/.cache/huggingface/hub
 
 # Install WhisperX from GitHub (this will also install faster-whisper and other dependencies)
-RUN pip install git+https://github.com/m-bain/whisperX.git
+RUN pip install git+https://github.com/m-bain/whisperX.git@v3.3.1
 
 # Set working directory inside the container
 WORKDIR /app
@@ -41,4 +41,3 @@ VOLUME ["/app"]
 
 # By default, run WhisperX help so you see available options; you can override this command when running the container.
 CMD ["whisperx", "--help"]
-
