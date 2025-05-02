@@ -1,4 +1,4 @@
-# audio_pipeline/modules/merge_srt_by_chunk.py
+# echoscribe/modules/merge_srt_by_chunk.py
 
 import os
 import glob

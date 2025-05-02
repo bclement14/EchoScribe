@@ -18,17 +18,15 @@ From messy audio files to a clean script, EchoScribe helps you:
 
 ---
 
-## 🎧 Context and Origin
+## 🌱 Context and Origin
 
 EchoScribe was born from real-world D&D sessions recorded over **Discord** using the **Craig bot**🐻.
 
-- Craig provides **individual speaker tracks** (one audio file per speaker) and optionally a **merged track**.
+- Craig can provides **individual speaker tracks** (one audio file per speaker) and optionally a **merged track**.
 - Early experiments tried using **merged tracks** + **WhisperX diarization** (speaker separation).
 - However, **speaker-specific tracks** produced significantly **better transcription quality**, even with long silences.
 
 As a result, EchoScribe is optimized to work best with **one audio track per speaker**, chunked with silence detection, and transcribed individually for clarity.
-
-> 📣 While diarization can be useful, this project currently favors the more accurate per-speaker track approach.
 
 ---
 
@@ -38,10 +36,41 @@ As a result, EchoScribe is optimized to work best with **one audio track per spe
 - ✍️ **Automatic Transcription** with WhisperX (Docker-integrated)
 - 🛠️ **Correction and Formatting** of transcription outputs
 - 🔀 **Dialogue Merging** into a coherent script
-- 🧹 **Low RAM Mode** for lightweight machines
+- 🧹 **Low RAM Mode** for lightweight machines and handle long session (heavy flac files)
 - 🗂️ **Session-based Folder Structure** (no working directory pollution)
 
 ---
+
+## ⚙️ System Requirements
+
+This project requires `ffmpeg` to be installed on your system.
+
+`ffmpeg` is used internally by the audio processing library `pydub` for handling audio chunking and file manipulation.
+
+You can install `ffmpeg` via your operating system's package manager:
+
+- **Ubuntu / Debian**:
+  ```bash
+  sudo apt update
+  sudo apt install ffmpeg
+  ```
+
+- **MacOS (Homebrew)**:
+  ```bash
+  brew install ffmpeg
+  ```
+
+- **Windows**:
+  - Download from [https://ffmpeg.org/download.html](https://ffmpeg.org/download.html)
+  - Add the `bin/` folder containing `ffmpeg.exe` to your `PATH` environment variable.
+
+After installing, verify installation with:
+
+```bash
+ffmpeg -version
+```
+
+✅ If the command shows version information, you are ready to go!
 
 ## 🚀 Quickstart
 

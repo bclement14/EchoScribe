@@ -1,4 +1,4 @@
-# audio_pipeline/modules/merge_speaker_entries.py
+# echoscribe/modules/merge_speaker_entries.py
 
 import srt
 from datetime import timedelta

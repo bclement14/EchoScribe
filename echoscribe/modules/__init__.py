@@ -7,6 +7,7 @@ from . import convert_json_to_srt
 from . import merge_srt_by_chunk
 from . import merge_speaker_entries
 from . import convert_srt_to_script
+from . import combined_whisperx_corrector_r as cwcr
 
 # Re-export key functions for easy access
 from .treat_flac_tracks import chunk_audio

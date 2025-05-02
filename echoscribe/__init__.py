@@ -1,5 +1,7 @@
 # echoscribe/__init__.py
 
+from . import pipeline
+
 from .pipeline import run_pipeline
 from .pipeline import run_whisperx_docker
 

@@ -1,4 +1,4 @@
-# audio_pipeline/modules/convert_srt_to_script.py
+# echoscribe/modules/convert_srt_to_script.py
 
 import re
 import os

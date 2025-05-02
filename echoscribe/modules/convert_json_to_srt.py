@@ -1,4 +1,4 @@
-# audio_pipeline/modules/convert_json_to_srt.py
+# echoscribe/modules/convert_json_to_srt.py
 
 import os
 import json
