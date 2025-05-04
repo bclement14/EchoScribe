@@ -259,10 +259,10 @@ That's where this version of EchoScribe comes from. It has been significantly re
 
 ## 💡 Future Directions
 
-# Next building block
+### Next building block
 -   [ ] **LLM Integration:** Summarization, narrative generation, character dialogue extraction through LLM API.
 
-# Possible evolutions
+### Possible evolutions
 -   [ ] **Direct Discord Bot Integration:** Streamline the process from recording to script.
 -   [ ] **Alternative ASR Models:** Integration options beyond WhisperX.
 -   [ ] **Configuration Files:** Allow pipeline configuration via YAML/TOML files.
