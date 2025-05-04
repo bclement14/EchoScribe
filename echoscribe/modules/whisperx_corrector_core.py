@@ -5,18 +5,8 @@ Purpose:
     Provides core functions for advanced correction of WhisperX JSON outputs,
     including a simplified adapter function for pipeline integration. Retains
     sophisticated correction logic while removing standalone application features.
-    This version (v1.1.5) incorporates final refinements based on review feedback,
-    including stricter type/path validation and enhanced documentation.
 
-Key Improvements in v1.1.5:
-    - Added try/except block around Path() instantiation in adapter function.
-    - Enhanced validation in `load_json_file` to check segment start/end types.
-    - Reviewed and refined type hints for more specificity.
-    - Ensured explicit return types for all functions.
-    - Added examples and clarifications to key docstrings.
-    - Verified consistent use of exception chaining (`raise ... from e`).
-
-Previous Key Features (Preserved):
+Key Features (Preserved):
     - Explicit config passing (using frozen dataclass).
     - SeverityLevel Enum for anomaly classification.
     - Robust edge-case handling (e.g., zero duration segments).
@@ -25,6 +15,8 @@ Previous Key Features (Preserved):
     - Tiered anomaly detection, statistical analysis, splitting/merging logic.
     - Safe file writing.
     - Configurable logging level.
+TODO: 
+    - make language option
 """
 
 import os
@@ -45,10 +37,6 @@ from numbers import Number  # For type checking
 from types import (
     MappingProxyType,
 )  # For immutable default config view (if needed, though frozen dataclass handles it)
-
-# --- Version Information ---
-__version__ = "1.1.5-core"  # Final refinement based on reviews
-
 
 # --- Type Definitions & Enums ---
 # (TypedDicts remain suitable here for static analysis benefits)
@@ -164,46 +152,89 @@ class WhisperXCorrectorConfig:
 DEFAULT_CONFIG: WhisperXCorrectorConfig = WhisperXCorrectorConfig()
 
 # --- Constants ---
-LOG_FORMAT: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+LOG_FORMAT: str = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 VALID_LOG_LEVELS: Set[str] = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
-# Immutable constants using frozenset
-PUNCTUATION_NO_SPACE_BEFORE: frozenset[str] = frozenset(
-    {",", ".", "!", "?", ";", ":", "'", '"', ")", "]", "}"}
-)
-PUNCTUATION_NO_SPACE_AFTER: frozenset[str] = frozenset({"(", "[", "{", '"', "'"})
+PUNCTUATION_NO_SPACE_BEFORE: frozenset[str] = frozenset({",", ".", "!", "?", ";", ":", "'", "\"", ")", "]", "}"})
+PUNCTUATION_NO_SPACE_AFTER: frozenset[str] = frozenset({"(", "[", "{", "\"", "'"}) # Note: Quote is tricky, might need refinement if used differently
+# --- NEW SET ---
+PUNCTUATION_SPACE_AFTER: frozenset[str] = frozenset({".", ",", "!", "?", ":", ";"}) # Punctuation that usually needs a space after it
+# --- END NEW SET ---
 SENTENCE_ENDING_PUNCTUATION: frozenset[str] = frozenset({".", "!", "?"})
-ALL_PUNCTUATION: frozenset[str] = PUNCTUATION_NO_SPACE_BEFORE.union(
-    PUNCTUATION_NO_SPACE_AFTER
-)
+ALL_PUNCTUATION: frozenset[str] = PUNCTUATION_NO_SPACE_BEFORE.union(PUNCTUATION_NO_SPACE_AFTER)
 
 # --- Global Logger ---
-logger = logging.getLogger("whisperx_corrector_core")
-if not logger.hasHandlers():
-    _default_handler = logging.StreamHandler(sys.stderr)
-    _default_formatter = logging.Formatter(LOG_FORMAT)
-    _default_handler.setFormatter(_default_formatter)
-    logger.addHandler(_default_handler)
-    logger.setLevel(logging.INFO)  # Default level, overridden by adapter
-
+log = logging.getLogger(__name__)
 
 # --- Core Logic Functions (Accept config object) ---
 
+# Inside whisperx_corrector_core.py
+import re
+
+# Use the previous sets again, maybe quote handling was the issue
+PUNCTUATION_NO_SPACE_BEFORE: frozenset[str] = frozenset({",", ".", "!", "?", ";", ":", "'", "\"", ")", "]", "}"})
+PUNCTUATION_NO_SPACE_AFTER: frozenset[str] = frozenset({"(", "[", "{", "\"", "'"}) # Includes quote as opening
+
+# Inside whisperx_corrector_core.py
+import re # Keep import just in case needed later
+
+# --- Corrected Constant Sets ---
+PUNCTUATION_NO_SPACE_BEFORE: frozenset[str] = frozenset({",", ".", "!", "?", ";", ":", ")", "]", "}", "'s", "'m", "'re", "'ve", "'ll", "'d"}) # NO quote
+PUNCTUATION_NO_SPACE_AFTER: frozenset[str] = frozenset({"(", "[", "{"}) # NO quote
+
+# ... other constants ...
 
 def build_text_with_proper_spacing(words: List[WordToken]) -> str:
-    """Rebuilds text from word tokens with smart spacing around punctuation."""
-    text_parts: List[str] = []
-    for i, word_obj in enumerate(words):
-        word = str(word_obj.get("word", "")).strip()  # Ensure string and strip
-        if not word:
-            continue
-        prepend_space = (
-            i > 0
-            and word not in PUNCTUATION_NO_SPACE_BEFORE
-            and str(words[i - 1].get("word", "")).strip()
-            not in PUNCTUATION_NO_SPACE_AFTER
-        )
-        text_parts.append((" " if prepend_space else "") + word)
-    return "".join(text_parts)
+    """
+    Rebuilds text from word tokens with smart spacing (Iterative approach v8).
+    Uses corrected punctuation sets and specific quote handling.
+    """
+    if not words: return ""
+    output_str = ""
+    # Simple state: Are we likely inside opening quotes? This isn't foolproof for nested quotes.
+    is_likely_inside_quotes = False
+
+    for i, token in enumerate(words):
+        current_word = str(token.get("word", "")).strip()
+        if not current_word: continue
+
+        needs_space_before = True
+
+        # --- Determine if space needed BEFORE current word ---
+        if not output_str: # First actual word
+            needs_space_before = False
+        else:
+            last_char = output_str[-1] # Check last character added
+
+            # 1. Don't add space if current word attaches backward
+            if current_word in PUNCTUATION_NO_SPACE_BEFORE:
+                needs_space_before = False
+            # 2. Don't add space if previous char needs attachment forward
+            elif last_char in PUNCTUATION_NO_SPACE_AFTER:
+                needs_space_before = False
+            # 3. Specific Quote Logic:
+            elif current_word == '"':
+                if is_likely_inside_quotes: # Likely a closing quote
+                     needs_space_before = False # Attach to previous word
+                # else: opening quote, default needs_space = True applies (unless prev was opening bracket)
+            elif last_char == '"':
+                 # If the last char was a quote, need to know if it was opening or closing
+                 if not is_likely_inside_quotes: # If we just ADDED a closing quote, the next word needs space
+                      needs_space_before = True
+                 else: # If we just ADDED an opening quote, the next word attaches
+                      needs_space_before = False
+
+
+        # --- Append space and word ---
+        if needs_space_before:
+            output_str += " "
+        output_str += current_word
+
+        # --- Update Quote State ---
+        if current_word == '"':
+            is_likely_inside_quotes = not is_likely_inside_quotes
+
+
+    return output_str # No strip() needed if logic is perfect (but maybe keep for safety?)
 
 
 def is_sentence_boundary(word: Union[str, WordToken]) -> bool:
@@ -218,131 +249,129 @@ def is_sentence_boundary(word: Union[str, WordToken]) -> bool:
 
 # --- Segment Statistics Calculation ---
 
-
 def _calculate_basic_stats(segment: Segment, words: List[WordToken]) -> SegmentStats:
     """Calculates initial stats like duration and word counts."""
     segment_start = segment.get("start", 0.0)
     segment_end = segment.get("end", 0.0)
-    segment_duration = max(0.0, segment_end - segment_start)
-    base_stats = SegmentStats(
-        valid=False,
-        reason="unknown",
-        total_words=len(words),
-        segment_duration=segment_duration,
-        word_count_with_timing=0,
-    )
-    if not words:
-        base_stats["reason"] = "empty_segment"
-    elif segment_duration <= 0:
+    # Ensure start/end are numeric before calculating duration
+    if not isinstance(segment_start, Number) or not isinstance(segment_end, Number):
+         segment_duration = 0.0 # Treat as invalid if types are wrong
+         reason = "non_numeric_segment_times"
+    else:
+         segment_duration = max(0.0, segment_end - segment_start)
+         reason = "unknown" # Default reason if duration is okay so far
+    base_stats = SegmentStats(valid=False, reason=reason, total_words=len(words),
+                              segment_duration=segment_duration, word_count_with_timing=0)
+    if not words: base_stats["reason"] = "empty_segment"
+    # Update reason if duration was non-positive, but don't override if already set
+    elif segment_duration <= 0 and base_stats["reason"] == "unknown":
         base_stats["reason"] = "zero_or_negative_duration"
     return base_stats
 
-
-def _extract_timing_data(
-    words: List[WordToken], config: WhisperXCorrectorConfig
-) -> Tuple[List[float], List[float], List[float], float]:
+def _extract_timing_data(words: List[WordToken], config: WhisperXCorrectorConfig) -> Tuple[List[float], List[float], List[float], float]:
     """Extracts durations, gaps, time points, and total word time from valid words."""
-    word_durations, word_gaps, time_points = [], [], []
-    total_word_time = 0.0
+    word_durations: List[float] = []
+    word_gaps: List[float] = []
+    time_points: List[float] = []
+    total_word_time: float = 0.0
     # Filter for valid numeric start/end times BEFORE sorting
     valid_words = [
-        w
-        for w in words
-        if isinstance(w.get("start"), Number)
-        and isinstance(w.get("end"), Number)
-        and w["end"] > w["start"]
+        w for w in words
+        if isinstance(w.get("start"), Number) and isinstance(w.get("end"), Number) and w["end"] > w["start"]
     ]
-    valid_words.sort(key=lambda w: w["start"])  # Sort only valid words
+    valid_words.sort(key=lambda w: w["start"]) # Sort only valid words
 
     for i, word in enumerate(valid_words):
-        start, end = word["start"], word["end"]  # We know these are Numbers now
+        # We know start/end exist and are Numbers here due to filtering
+        start, end = word["start"], word["end"]
         time_points.extend([start, end])
         duration = end - start
         word_durations.append(duration)
         total_word_time += duration
         if i < len(valid_words) - 1:
-            next_word = valid_words[i + 1]
-            gap = next_word["start"] - end  # Can safely access start/end
-            if gap >= config.min_gap_duration:
+            next_word = valid_words[i+1]
+            # We know start/end exist for next_word too
+            gap = next_word["start"] - end
+            if gap >= config.min_gap_duration: # Use config
                 word_gaps.append(gap)
     return word_durations, word_gaps, time_points, total_word_time
 
+# --- Main calculate_segment_statistics Function (Corrected) ---
 
-def calculate_segment_statistics(
-    segment: Segment, config: WhisperXCorrectorConfig
-) -> SegmentStats:
-    """Calculate comprehensive statistical properties of a segment."""
+def calculate_segment_statistics(segment: Segment, config: WhisperXCorrectorConfig) -> SegmentStats:
+    """
+    Calculate comprehensive statistical properties of a segment using provided config.
+
+    Args:
+        segment: The segment dictionary.
+        config: The configuration settings to use.
+
+    Returns:
+        A SegmentStats dictionary with calculated metrics.
+    """
     words = segment.get("words", [])
     stats = _calculate_basic_stats(segment, words)
-    if stats["reason"] is not None:
+    # Return early if basic checks (empty words, bad duration, non-numeric times) failed
+    if stats["reason"] not in [None, "unknown"]:
+        stats["valid"] = False # Ensure valid is False
         return stats
 
-    word_durations, word_gaps, time_points, total_word_time = _extract_timing_data(
-        words, config
-    )
+    # Extract timing data from potentially valid words
+    word_durations, word_gaps, time_points, total_word_time = _extract_timing_data(words, config)
     stats["word_count_with_timing"] = len(word_durations)
 
+    # --- Corrected Logic Block ---
     if stats["word_count_with_timing"] < 2:
+        # If insufficient timed words, set reason and provide defaults
         stats["reason"] = "insufficient_timed_words"
         defaults = {
-            "avg_word_duration": 0.0,
-            "max_word_duration": 0.0,
-            "min_word_duration": 0.0,
-            "word_duration_variance": 0.0,
-            "avg_gap": 0.0,
-            "max_gap": 0.0,
-            "time_span": 0.0,
-            "speech_rate": 0.0,
-            "time_utilization": 0.0,
-            "total_gap_time": 0.0,
-            "density": 0.0,
-            "gap_stddev": 0.0,
-            "duration_stddev": 0.0,
+            "avg_word_duration": 0.0, "max_word_duration": 0.0, "min_word_duration": 0.0,
+            "word_duration_variance": 0.0, "avg_gap": 0.0, "max_gap": 0.0,
+            "time_span": 0.0, "speech_rate": 0.0, "time_utilization": 0.0,
+            "total_gap_time": 0.0, "density": 0.0, "gap_stddev": 0.0, "duration_stddev": 0.0
         }
         stats.update({k: v for k, v in defaults.items() if k not in stats})
-        return stats
-
-    stats["valid"], stats["reason"] = True, None
-    segment_duration = stats["segment_duration"]
-    stats["avg_word_duration"] = np.mean(word_durations).item()
-    stats["max_word_duration"] = np.max(word_durations).item()
-    stats["min_word_duration"] = np.min(word_durations).item()
-    stats["word_duration_variance"] = np.var(word_durations).item()
-    if word_gaps:
-        stats["avg_gap"], stats["max_gap"], stats["total_gap_time"] = (
-            np.mean(word_gaps).item(),
-            np.max(word_gaps).item(),
-            sum(word_gaps),
-        )
-        try:
-            stats["gap_stddev"] = (
-                statistics.stdev(word_gaps) if len(word_gaps) > 1 else 0.0
-            )
-        except statistics.StatisticsError:
-            stats["gap_stddev"] = 0.0
+        stats["valid"] = False # Ensure valid is explicitly False
+        return stats # Return the invalid stats dict
     else:
-        (
-            stats["avg_gap"],
-            stats["max_gap"],
-            stats["total_gap_time"],
-            stats["gap_stddev"],
-        ) = (0.0, 0.0, 0.0, 0.0)
-    stats["time_span"] = max(time_points) - min(time_points) if time_points else 0.0
-    stats["speech_rate"] = (
-        stats["total_words"] / segment_duration if segment_duration > 0 else 0.0
-    )
-    stats["time_utilization"] = (
-        total_word_time / segment_duration if segment_duration > 0 else 0.0
-    )
-    stats["density"] = stats["time_utilization"]
-    try:
-        stats["duration_stddev"] = (
-            statistics.stdev(word_durations) if len(word_durations) > 1 else 0.0
-        )
-    except statistics.StatisticsError:
-        stats["duration_stddev"] = 0.0
-    return stats
+        # --- Detailed calculations execute ONLY IF word_count_with_timing >= 2 ---
+        stats["valid"], stats["reason"] = True, None # Mark as valid
+        segment_duration = stats["segment_duration"] # Cache for use below
 
+        # Calculate stats (use .item() to convert numpy types to Python floats)
+        stats["avg_word_duration"] = np.mean(word_durations).item()
+        stats["max_word_duration"] = np.max(word_durations).item()
+        stats["min_word_duration"] = np.min(word_durations).item()
+        stats["word_duration_variance"] = np.var(word_durations).item()
+
+        if word_gaps:
+            stats["avg_gap"] = np.mean(word_gaps).item()
+            stats["max_gap"] = np.max(word_gaps).item()
+            stats["total_gap_time"] = sum(word_gaps)
+            try:
+                stats["gap_stddev"] = statistics.stdev(word_gaps) if len(word_gaps) > 1 else 0.0
+            except statistics.StatisticsError:
+                stats["gap_stddev"] = 0.0 # Handle case with single gap after filtering? Unlikely.
+        else:
+            stats["avg_gap"], stats["max_gap"], stats["total_gap_time"], stats["gap_stddev"] = 0.0, 0.0, 0.0, 0.0
+
+        stats["time_span"] = max(time_points) - min(time_points) if time_points else 0.0
+
+        # Ensure segment_duration is positive before dividing
+        if segment_duration > 0:
+            stats["speech_rate"] = stats["total_words"] / segment_duration
+            stats["time_utilization"] = total_word_time / segment_duration
+            stats["density"] = stats["time_utilization"]
+        else:
+            # Should be unreachable due to earlier checks, but defensive coding
+            stats["speech_rate"], stats["time_utilization"], stats["density"] = 0.0, 0.0, 0.0
+
+        try:
+            stats["duration_stddev"] = statistics.stdev(word_durations) if len(word_durations) > 1 else 0.0
+        except statistics.StatisticsError:
+            stats["duration_stddev"] = 0.0
+
+        return stats # Return the valid stats dict-
 
 # --- Anomaly Detection ---
 
@@ -403,60 +432,109 @@ def fix_basic_word_timestamps(
     segment_end: float,
     config: WhisperXCorrectorConfig,
 ) -> List[WordToken]:
-    """Fix missing, invalid, or inconsistent timestamps in words within segment boundaries."""
+    """
+    Fix missing, invalid, or inconsistent timestamps in words within segment boundaries.
+    Handles missing start/end, end <= start, duration < min_duration, and clamps results.
+    """
     if not words:
         return []
     fixed_words = []
+    # Ensure segment times are valid and have minimum duration space
     segment_start = max(0.0, segment_start)
     segment_end = max(segment_start + config.min_word_duration, segment_end)
     last_valid_end_time = segment_start
 
     for i, word_data in enumerate(words):
         word = word_data.copy()
-        # Check word content robustness
-        word_text = str(word.get("word", "")).strip()
-        if not word_text:
-            continue  # Skip if word is empty/whitespace
-        word["word"] = word_text  # Store stripped version
+        word_value = word.get("word") # Get value before check
 
+        # --- Filter invalid word entries ---
+        word_text_stripped = str(word_value).strip() if word_value is not None else ""
+        if "word" not in word or \
+           word_value is None or \
+           not word_text_stripped or \
+           word_text_stripped.lower() == "none":
+            if log.isEnabledFor(logging.DEBUG):
+                 log.debug(f"Skipping invalid word entry: {word_data}")
+            continue
+        word["word"] = word_text_stripped # Store stripped version
+        # --- End Filter ---
+
+        # Add score if missing
         if "score" not in word:
             word["score"] = None
 
+        # --- Get Initial Start/End ---
         start = word.get("start")
         end = word.get("end")
-        # Validate/Fix Start
-        if not isinstance(start, Number) or start < 0:
-            start = None
-        if start is None:
-            start = last_valid_end_time
+
+        # --- Validate/Fix Start Time ---
+        if not isinstance(start, Number) or start < 0: start = None
+        if start is None: start = last_valid_end_time
+        # Ensure start doesn't overlap significantly with previous word's end
         start = max(start, last_valid_end_time)
+        # Clamp start to segment boundaries (allowing space for min duration at the end)
         start = max(segment_start, min(segment_end - config.min_word_duration, start))
-        # Validate/Fix End
-        if not isinstance(end, Number) or end <= start:
-            end = None
-        if end is None:
-            estimated_end = start + config.typical_word_duration
-            next_valid_start = None
-            for j in range(i + 1, len(words)):  # Find next valid start
-                next_w_start = words[j].get("start")
-                if isinstance(next_w_start, Number) and next_w_start >= start:
-                    next_valid_start = next_w_start
-                    break
-            upper_bound = segment_end
-            if next_valid_start is not None:
-                upper_bound = min(
-                    segment_end, next_valid_start - config.min_gap_duration
-                )
-            end = max(start + config.min_word_duration, min(estimated_end, upper_bound))
+
+        # --- Validate/Fix End Time ---
+        # Determine if original end time is valid *and* after start
+        original_end_is_valid_and_after_start = isinstance(end, Number) and end > start
+
+        if not original_end_is_valid_and_after_start:
+            # CASE 1: Original end is invalid (None, non-numeric, or <= start)
+            # We need to *estimate* or *force* a new end time.
+
+            # If the original end was explicitly <= start, we prioritize minimum duration.
+            if isinstance(end, Number) and end <= start:
+                 # Force minimum duration as the primary goal
+                 end = start + config.min_word_duration
+                 if log.isEnabledFor(logging.DEBUG):
+                     log.debug(f"Word '{word_text_stripped}' end <= start. Forcing min duration end: {end:.3f}")
+            else:
+                 # Original end was None or non-numeric. Estimate using typical duration.
+                 estimated_end = start + config.typical_word_duration
+                 if log.isEnabledFor(logging.DEBUG):
+                      log.debug(f"Word '{word_text_stripped}' missing/invalid end. Estimating end: {estimated_end:.3f}")
+
+                 # Find upper bound from next word or segment end
+                 next_valid_start = None
+                 for j in range(i + 1, len(words)):
+                      next_w_start = words[j].get("start")
+                      # Check if next word's start is valid and after current start
+                      if isinstance(next_w_start, Number) and next_w_start > start:
+                           next_valid_start = next_w_start; break
+
+                 upper_bound = segment_end
+                 if next_valid_start is not None:
+                      # Clamp by next word start, ensuring minimum gap
+                      upper_bound = min(segment_end, next_valid_start - config.min_gap_duration)
+
+                 # Choose the smaller of the estimate and the upper bound
+                 potential_end = min(estimated_end, upper_bound)
+
+                 # Ensure the final end respects the minimum duration *when estimating*
+                 end = max(start + config.min_word_duration, potential_end)
+                 if log.isEnabledFor(logging.DEBUG):
+                     log.debug(f"Word '{word_text_stripped}' potential end after bounds: {potential_end:.3f}, final end after min_duration: {end:.3f}")
+
+
         elif end - start < config.min_word_duration:
+            # CASE 2: Original end was valid and after start, but duration too small
+            if log.isEnabledFor(logging.DEBUG):
+                 log.debug(f"Word '{word_text_stripped}' duration < min ({end-start:.3f} < {config.min_word_duration}). Enforcing min duration.")
             end = start + config.min_word_duration
-        # Clamp End
-        end = max(start + config.min_word_duration, min(segment_end, end))
+
+        # --- Final Clamping and Assignment ---
+        # Clamp end time to the overall segment boundary
+        end = min(segment_end, end)
+        # Final check: Ensure end is *at least* min_duration after start, even after segment clamping
+        end = max(start + config.min_word_duration, end)
 
         word["start"], word["end"] = start, end
-        last_valid_end_time = end
-        fixed_words.append(word)
+        last_valid_end_time = end # Update for the next iteration's start calculation
+        fixed_words.append(word) # Add the fully fixed word
 
+    # Final sort (should mostly be in order, but ensures correctness)
     fixed_words.sort(key=lambda w: w.get("start", 0.0))
     return fixed_words
 
@@ -465,82 +543,112 @@ def distribute_words_evenly(
     words: List[WordToken],
     segment_start: float,
     segment_end: float,
-    config: WhisperXCorrectorConfig,
-) -> List[WordToken]:
-    """Distribute words evenly, handling edge cases for duration and characters."""
-    if not words:
-        return []
-    if logger.isEnabledFor(logging.DEBUG):
-        logger.debug(
-            f"Applying synthetic timestamps for segment {segment_start:.2f}-{segment_end:.2f}"
-        )
+    config: WhisperXCorrectorConfig
+    ) -> List[WordToken]:
+    """
+    Distribute words evenly across a time span, adjusting duration based on word length.
+    Used for segments with severe timestamp issues. Includes improved edge case handling.
+
+    Args:
+        words: List of word tokens to redistribute.
+        segment_start: Start time of the segment.
+        segment_end: End time of the segment.
+        config: Configuration object.
+
+    Returns:
+        List of word tokens with redistributed timestamps.
+    """
+    if not words: return []
+    if log.isEnabledFor(logging.DEBUG):
+        log.debug(f"Applying synthetic timestamps for segment {segment_start:.2f}-{segment_end:.2f}")
     segment_duration = segment_end - segment_start
 
+    # --- Handle zero/negative segment duration ---
     if segment_duration <= 0:
-        logger.warning(
-            f"Segment duration <= 0 ({segment_duration:.2f}s) in distribute_words_evenly. Assigning minimal duration sequentially."
-        )
+        log.warning(f"Segment duration <= 0 ({segment_duration:.2f}s) in distribute_words_evenly. Assigning minimal duration sequentially.")
         current_time = segment_start
         for word in words:
-            word["start"], word["end"] = (
-                current_time,
-                current_time + config.min_word_duration,
-            )
-            current_time = word["end"]
+            word["start"] = current_time
+            word["end"] = current_time + config.min_word_duration
+            current_time = word["end"] # Move time forward based on added duration
         return words
 
+    # --- Handle zero total characters ---
     total_chars = sum(len(w.get("word", "")) for w in words if w.get("word"))
     if total_chars <= 0:
-        logger.warning(
-            "Segment has zero total characters for distribution. Distributing time equally per word."
-        )
+        log.warning("Segment has zero total characters for distribution. Distributing time equally per word.")
         total_chars = len(words)
-        if total_chars == 0:
-            logger.error("Cannot distribute time: No words.")
-            return words
+        if total_chars == 0: log.error("Cannot distribute time: No words."); return words # Should be caught by outer if
 
+    # --- Calculate time available for words vs gaps ---
     num_gaps = max(0, len(words) - 1)
     min_total_gap_time = num_gaps * config.min_gap_duration
+
+    # Check if minimum gaps already exceed segment duration
     if min_total_gap_time >= segment_duration:
-        logger.warning(
-            f"Min gap time ({min_total_gap_time:.2f}s) >= segment duration ({segment_duration:.2f}s) for {len(words)} words. Assigning only minimal word durations."
-        )
-        time_for_words = 0.0
+        log.warning(f"Min gap time ({min_total_gap_time:.2f}s) >= segment duration ({segment_duration:.2f}s) for {len(words)} words. Assigning only minimal word durations without gaps.")
+        time_for_words = 0.0 # No time left for actual word content duration beyond minimum
     else:
         time_for_words = segment_duration - min_total_gap_time
 
+    # --- Distribute Time ---
     current_time = segment_start
-    new_words = []
-    accumulated_duration = 0.0
+    new_words: List[WordToken] = []
+    accumulated_word_duration = 0.0 # Track allocated time *for words*
+
     for i, word_data in enumerate(words):
         word = word_data.copy()
-        char_count = max(1, len(word.get("word", "")))
-        prop_duration = (
-            (char_count / total_chars) * time_for_words if time_for_words > 0 else 0.0
-        )
+        char_count = max(1, len(str(word.get("word", "")))) # Use str() for safety, max 1 char
+
+        # Calculate proportional duration, handle time_for_words == 0 case
+        prop_duration = (char_count / total_chars) * time_for_words if time_for_words > 0 else 0.0
         word_duration = max(config.min_word_duration, prop_duration)
-        max_duration_this_word = max(
-            config.min_word_duration, time_for_words - accumulated_duration
-        )
+
+        # Cap duration based on remaining allocatable *word* time
+        # Ensure we don't overallocate the time_for_words budget
+        max_duration_this_word = max(config.min_word_duration, time_for_words - accumulated_word_duration)
         word_duration = min(word_duration, max_duration_this_word)
+        # Ensure minimum again after capping against remaining budget
         word_duration = max(config.min_word_duration, word_duration)
+
+        # Assign start/end, clamping end to segment boundary
         word_start = current_time
         word_end = min(segment_end, current_time + word_duration)
+        # Ensure end is strictly after start, respecting min duration
         word_end = max(word_start + config.min_word_duration, word_end)
+        # Final clamp of end time to segment boundary
         word_end = min(segment_end, word_end)
-        word["start"], word["end"] = word_start, word_end
-        new_words.append(word)
-        actual_duration = word["end"] - word["start"]
-        accumulated_duration += actual_duration
-        current_time = word["end"]
-        if i < len(words) - 1:
-            current_time = min(segment_end, current_time + config.min_gap_duration)
 
-    if new_words and new_words[-1]["end"] < segment_end:
+        word["start"] = word_start
+        word["end"] = word_end
+        new_words.append(word)
+
+        # Update accumulated time and current time cursor
+        actual_word_duration = word["end"] - word["start"]
+        accumulated_word_duration += actual_word_duration # Add duration of the word just placed
+        current_time = word["end"] # Move cursor to the end of this word
+
+        # If time_for_words was <= 0, stack words without gaps.
+        if i < len(words) - 1 and time_for_words > 0:
+             current_time = min(segment_end, current_time + config.min_gap_duration)
+        # Ensure current_time doesn't exceed segment end after potentially adding gap
+        current_time = min(current_time, segment_end)
+
+
+
+    # --- Final Adjustment ---
+    # Adjust last word end precisely to segment end if needed,
+    # ensuring it still respects min duration relative to its start.
+    if new_words:
         last_word = new_words[-1]
-        last_word["end"] = min(
-            segment_end, max(last_word["start"] + config.min_word_duration, segment_end)
-        )
+        if last_word["end"] < segment_end:
+             # Extend end, but ensure it's still valid (>= start + min_duration)
+             last_word["end"] = max(last_word["start"] + config.min_word_duration, segment_end)
+        # Ensure last word doesn't exceed boundary after adjustment
+        last_word["end"] = min(segment_end, last_word["end"])
+        # If clamping end made duration too small, adjust start backward (optional, might cause overlap if first word)
+        if i == 0 and last_word["end"] - last_word["start"] < config.min_word_duration:
+             last_word["start"] = max(segment_start, last_word["end"] - config.min_word_duration)
 
     return new_words
 
@@ -557,8 +665,8 @@ def apply_local_fixes(
         if isinstance(start, Number) and isinstance(end, Number):
             duration = end - start
             if duration > config.max_word_duration:
-                if logger.isEnabledFor(logging.DEBUG):
-                    logger.debug(
+                if log.isEnabledFor(logging.DEBUG):
+                    log.debug(
                         f"Capping duration for word '{word.get('word','')}' from {duration:.2f}s"
                     )
                 word["end"] = start + config.max_word_duration
@@ -602,84 +710,70 @@ def _get_split_candidates(
             )
     return split_candidates
 
-
-def split_segment_at_optimal_points(
-    segment: Segment, stats: SegmentStats, config: WhisperXCorrectorConfig
-) -> List[Segment]:
+def split_segment_at_optimal_points(segment: Segment, stats: SegmentStats, config: WhisperXCorrectorConfig) -> List[Segment]:
     """Split a segment if too long or contains hard gaps, prioritizing linguistic boundaries."""
     words = segment.get("words", [])
-    should_consider_split = (
-        stats.get("segment_duration", 0) > config.max_segment_duration
-        or stats.get("max_gap", 0) > config.hard_gap_duration
-    )
-    if not words or len(words) < 2 or not should_consider_split:
+    # Determine the initial reason(s) for potentially splitting
+    duration_exceeded = stats.get("segment_duration", 0) > config.max_segment_duration
+    hard_gap_exists = stats.get("max_gap", 0) > config.hard_gap_duration
+
+    # Only proceed if there's a reason to split
+    if not words or len(words) < 2 or not (duration_exceeded or hard_gap_exists):
         return [segment]
 
     split_candidates = _get_split_candidates(words, config)
     if not split_candidates:
+        # Cannot split if no candidates found, even if duration is too long
+        log.warning(f"Segment {segment['start']:.2f}-{segment['end']:.2f} exceeds max duration but no suitable split points found.")
         return [segment]
 
     selected_indices: Set[int] = set()
-    candidates_sorted = sorted(
-        split_candidates, key=lambda x: (-x["is_hard"], -x["score"])
-    )
-    current_chunk_start_idx = 0
-    for cand in candidates_sorted:
-        split_idx = cand["index"]
-        already_covered = any(
-            current_chunk_start_idx <= split_idx <= sel_idx
-            for sel_idx in selected_indices
-        )
-        if already_covered:
-            continue
-        words_in_chunk = words[current_chunk_start_idx : split_idx + 1]
-        if not words_in_chunk:
-            continue
-        chunk_start = words_in_chunk[0].get("start", segment["start"])
-        chunk_end = words_in_chunk[-1].get("end", segment["end"])
-        if cand["is_hard"] or (chunk_end - chunk_start) > config.max_segment_duration:
-            selected_indices.add(split_idx)
-            current_chunk_start_idx = split_idx + 1
-    if not selected_indices:
-        return [segment]
+    # Always consider the best candidate first (highest score, prioritizing hard gaps)
+    best_candidate = sorted(split_candidates, key=lambda x: (-x["is_hard"], -x["score"]))[0]
 
-    final_segments: List[Segment] = []
-    start_idx = 0
-    sorted_indices = sorted(list(selected_indices))
+    # Reason 1: Hard gap always forces a split at that point (if candidates exist)
+    if hard_gap_exists:
+         # Find all hard gap candidates and select them
+         hard_gap_indices = {cand["index"] for cand in split_candidates if cand["is_hard"]}
+         selected_indices.update(hard_gap_indices)
+         log.debug(f"Selecting hard gap split indices: {selected_indices}")
+
+    # Reason 2: Duration exceeded forces at least one split using the best candidate
+    # Add the best candidate *if* duration is exceeded AND no hard gap splits were already selected
+    # OR if hard gaps exist but the best candidate offers a better score overall (unlikely but possible)
+    if duration_exceeded and not selected_indices:
+        log.debug(f"Duration exceeded ({stats.get('segment_duration', 0):.2f}s > {config.max_segment_duration}s). Selecting best candidate split at index {best_candidate['index']}.")
+        selected_indices.add(best_candidate["index"])
+    elif duration_exceeded and best_candidate["index"] not in selected_indices:
+         # Optional: Consider adding the best non-hard split if segment is still too long between hard splits
+         # This adds complexity, let's keep it simple first: Split only at hard gaps OR the single best point if duration is the only issue.
+         # For now, if hard gaps exist, we only split there even if duration is long.
+         pass
+
+
+    # If after all checks, no indices were selected (e.g., only moderate gaps and duration OK)
+    if not selected_indices:
+         # This case should have been caught by the initial check, but double-check
+         return [segment]
+
+    # --- Segment Construction (remains the same) ---
+    final_segments: List[Segment] = []; start_idx = 0; sorted_indices = sorted(list(selected_indices))
     for split_idx in sorted_indices:
         sub_words = words[start_idx : split_idx + 1]
-        if not sub_words:
-            continue
-        sub_start = sub_words[0].get("start", segment["start"] if start_idx == 0 else 0)
+        if not sub_words: continue
+        sub_start = sub_words[0].get("start", segment["start"] if start_idx==0 else 0)
         sub_end = sub_words[-1].get("end", segment["end"])
-        final_segments.append(
-            Segment(
-                start=sub_start,
-                end=sub_end,
-                words=sub_words,
-                text=build_text_with_proper_spacing(sub_words),
-            )
-        )
+        final_segments.append(Segment(start=sub_start, end=sub_end, words=sub_words, text=build_text_with_proper_spacing(sub_words)))
         start_idx = split_idx + 1
-    if start_idx < len(words):  # Add remaining part
+    if start_idx < len(words): # Add remaining part
         sub_words = words[start_idx:]
         if sub_words:
-            sub_start = sub_words[0].get("start", segment["start"])
-            sub_end = segment["end"]
-            final_segments.append(
-                Segment(
-                    start=sub_start,
-                    end=sub_end,
-                    words=sub_words,
-                    text=build_text_with_proper_spacing(sub_words),
-                )
-            )
+             sub_start = sub_words[0].get("start", segment["start"])
+             sub_end = segment["end"]
+             final_segments.append(Segment(start=sub_start, end=sub_end, words=sub_words, text=build_text_with_proper_spacing(sub_words)))
 
-    if logger.isEnabledFor(logging.DEBUG):
-        logger.debug(
-            f"Split segment {segment['start']:.2f}-{segment['end']:.2f} into {len(final_segments)} parts."
-        )
-    return final_segments if final_segments else [segment]
+    if log.isEnabledFor(logging.DEBUG): log.debug(f"Split segment {segment['start']:.2f}-{segment['end']:.2f} into {len(final_segments)} parts based on selected indices: {sorted_indices}.")
+    return final_segments if final_segments else [segment] # Fallback
 
 
 def should_merge_segments(
@@ -722,8 +816,8 @@ def merge_segments(prev_segment: Segment, current_segment: Segment) -> Segment:
         words=merged_words,
         text=build_text_with_proper_spacing(merged_words),
     )
-    if logger.isEnabledFor(logging.DEBUG):
-        logger.debug(
+    if log.isEnabledFor(logging.DEBUG):
+        log.debug(
             f"Merged segments ending at {prev_segment.get('end', 0):.2f} and {current_segment.get('end', 0):.2f}"
         )
     return merged
@@ -744,7 +838,7 @@ def _apply_correction_strategy(
     original_end = segment.get("end", 0.0)
 
     if severity == SeverityLevel.SEVERE:
-        logger.warning(
+        log.warning(
             f"Segment {original_start:.2f}-{original_end:.2f} SEVERE ({reasons}). Applying synthetic timestamps."
         )
         redist_start = (
@@ -766,7 +860,7 @@ def _apply_correction_strategy(
         )
 
     elif severity == SeverityLevel.MODERATE:
-        logger.info(
+        log.info(
             f"Segment {original_start:.2f}-{original_end:.2f} MODERATE ({reasons}). Applying local fixes & splitting."
         )
         locally_fixed_words = apply_local_fixes(segment["words"], config)
@@ -781,7 +875,7 @@ def _apply_correction_strategy(
         )  # Split based on original moderate stats
 
     else:  # NORMAL severity (Should be unreachable if called correctly)
-        logger.error(
+        log.error(
             "_apply_correction_strategy called with NORMAL severity (logic error)."
         )
         return [segment]
@@ -808,14 +902,14 @@ def process_segment(segment: Segment, config: WhisperXCorrectorConfig) -> List[S
     original_start = segment.get("start", 0.0)
     original_end = segment.get("end", 0.0)
     if not segment.get("words"):
-        logger.warning(f"Seg {original_start:.2f}-{original_end:.2f} has no words.")
+        log.warning(f"Seg {original_start:.2f}-{original_end:.2f} has no words.")
         return []
 
     fixed_words = fix_basic_word_timestamps(
         segment["words"], original_start, original_end, config
     )
     if not fixed_words:
-        logger.warning(
+        log.warning(
             f"Seg {original_start:.2f}-{original_end:.2f}: No valid words after fixing."
         )
         return []
@@ -834,8 +928,8 @@ def process_segment(segment: Segment, config: WhisperXCorrectorConfig) -> List[S
         processed_segments = split_segment_at_optimal_points(
             current_segment, stats, config
         )
-        if logger.isEnabledFor(logging.DEBUG) and len(processed_segments) == 1:
-            logger.debug(f"Seg {original_start:.2f}-{original_end:.2f} passed.")
+        if log.isEnabledFor(logging.DEBUG) and len(processed_segments) == 1:
+            log.debug(f"Seg {original_start:.2f}-{original_end:.2f} passed.")
     else:
         processed_segments = _apply_correction_strategy(
             current_segment, stats, severity, reasons, config
@@ -848,7 +942,7 @@ def process_segment(segment: Segment, config: WhisperXCorrectorConfig) -> List[S
         if seg.get("end", 0) > seg.get("start", 0) and seg.get("words")
     ]
     if len(final_valid_segments) != len(processed_segments):
-        logger.warning(
+        log.warning(
             f"Dropped {len(processed_segments) - len(final_valid_segments)} invalid segments during processing of {original_start:.2f}-{original_end:.2f}"
         )
     return final_valid_segments
@@ -862,7 +956,7 @@ def safe_write_json(data: Dict[str, Any], output_path: Path) -> None:
     try:
         output_path.parent.mkdir(parents=True, exist_ok=True)
     except OSError as e:
-        logger.error(f"Failed creating parent dir for {output_path}: {e}")
+        log.error(f"Failed creating parent dir for {output_path}: {e}")
         raise IOError(f"Failed creating parent dir for {output_path}") from e
     temp_file_path: Optional[Path] = None
     try:
@@ -877,14 +971,14 @@ def safe_write_json(data: Dict[str, Any], output_path: Path) -> None:
         shutil.move(str(temp_file_path), output_path)
         temp_file_path = None  # Set to None after successful move
     except Exception as e:
-        logger.error(f"Error during safe write to {output_path}: {e}")
+        log.error(f"Error during safe write to {output_path}: {e}")
         raise IOError(f"Error writing safely to {output_path}") from e
     finally:
         if temp_file_path and temp_file_path.exists():  # Cleanup if move failed
             try:
                 temp_file_path.unlink()
             except OSError as unlink_err:
-                logger.error(
+                log.error(
                     f"Failed removing temp file {temp_file_path}: {unlink_err}"
                 )
 
@@ -947,8 +1041,8 @@ def _process_single_file(
     input_file_path: Path, output_file_path: Path, config: WhisperXCorrectorConfig
 ) -> ProcessedStats:
     """Internal function to process one file sequentially, using provided config."""
-    if logger.isEnabledFor(logging.INFO):
-        logger.info(f"Processing file: {input_file_path} -> {output_file_path}")
+    if log.isEnabledFor(logging.INFO):
+        log.info(f"Processing file: {input_file_path} -> {output_file_path}")
     stats = ProcessedStats(
         anomalies_detected=0,
         severe_anomalies=0,
@@ -964,7 +1058,7 @@ def _process_single_file(
         original_segments = data.get("segments", [])
         stats["original_segments"] = len(original_segments)
         if not original_segments:
-            logger.warning(f"No segments found in {input_file_path}")
+            log.warning(f"No segments found in {input_file_path}")
             stats["error"] = "no_segments"
             data["segments"] = []
             # Write empty file
@@ -982,7 +1076,7 @@ def _process_single_file(
             original_segments,
             desc=f"Correcting {input_file_path.name}",
             leave=False,
-            disable=not sys.stdout.isatty() or logger.level <= logging.DEBUG,
+            disable=not sys.stdout.isatty() or log.getEffectiveLevel() <= logging.DEBUG,
         )
         for segment in segment_iterator:
             processed_list = process_segment(segment, config)
@@ -1022,14 +1116,14 @@ def _process_single_file(
             output_file_path.write_text(
                 json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8"
             )
-        if logger.isEnabledFor(logging.INFO):
-            logger.info(f"Successfully processed and saved {output_file_path}")
+        if log.isEnabledFor(logging.INFO):
+            log.info(f"Successfully processed and saved {output_file_path}")
 
     except (ValueError, IOError, FileNotFoundError) as e:
-        logger.error(f"Error processing file {input_file_path}: {e}")
+        log.error(f"Error processing file {input_file_path}: {e}")
         stats["error"] = str(e)
     except Exception as e:
-        logger.exception(f"Unexpected error processing file {input_file_path}")
+        log.exception(f"Unexpected error processing file {input_file_path}")
         stats["error"] = f"Unexpected: {type(e).__name__}"
     return stats
 
@@ -1044,67 +1138,57 @@ def _find_json_files(directory: Path) -> Generator[Path, None, None]:
 
 
 def correct_whisperx_outputs(
-    input_dir: str,
-    output_dir: str,
+    input_dir: Union[str, Path],   # <--- Accept Path object
+    output_dir: Union[str, Path],  # <--- Accept Path object
     overwrite: bool = False,
-    log_level: str = "INFO",
-    # config: WhisperXCorrectorConfig = DEFAULT_CONFIG # Option to pass custom config
+    # config: WhisperXCorrectorConfig = DEFAULT_CONFIG # Keep config internal for now
 ) -> None:
     """
     Processes and corrects WhisperX JSON files in a directory. Main integration point.
 
     Args:
-        input_dir: Path string to the input directory.
-        output_dir: Path string to the output directory.
+        input_dir: Path object or string to the input directory.
+        output_dir: Path object or string to the output directory.
         overwrite: If True, overwrite existing files in the output directory.
-        log_level: Logging level ('DEBUG', 'INFO', 'WARNING', 'ERROR').
-        # config: Optional custom configuration object. Defaults to DEFAULT_CONFIG.
 
     Raises:
-        TypeError: If input arguments have invalid types.
-        ValueError: If directory paths are invalid, or log_level is invalid.
+        TypeError: If input path arguments are not strings or Path objects.
+        ValueError: If directory paths are invalid after conversion to Path.
         FileNotFoundError: If input directory does not exist.
         IOError: On directory creation or file writing issues.
     """
     # --- Input Validation ---
-    if not isinstance(input_dir, str) or not input_dir:
-        raise TypeError("input_dir must be a non-empty string")
-    if not isinstance(output_dir, str) or not output_dir:
-        raise TypeError("output_dir must be a non-empty string")
+    # Check type before converting to Path
+    if not isinstance(input_dir, (str, Path)):
+        raise TypeError(f"input_dir must be a string or Path object, got {type(input_dir)}")
+    if not isinstance(output_dir, (str, Path)):
+        raise TypeError(f"output_dir must be a string or Path object, got {type(output_dir)}")
     if not isinstance(overwrite, bool):
         raise TypeError("overwrite must be a boolean")
-    if not isinstance(log_level, str) or log_level.upper() not in VALID_LOG_LEVELS:
-        raise ValueError(f"Invalid log_level: {log_level}")
+    
     # if not isinstance(config, WhisperXCorrectorConfig): raise TypeError("config must be an instance of WhisperXCorrectorConfig") # If config passed
-
-    # --- Setup ---
-    # Configure logger level for this run
+    
+    # Convert to Path objects and resolve EARLY for consistent handling
     try:
-        logger.setLevel(log_level.upper())
-    except ValueError:
-        logger.warning(f"Invalid log level '{log_level}', using INFO.")
-        logger.setLevel(logging.INFO)  # Fallback
-    logger.info(
-        f"Starting WhisperX output correction (Core v{__version__}) with log level {logger.getLevelName(logger.level)}..."
-    )
-    logger.info(f"Input directory: '{input_dir}'")
-    logger.info(f"Output directory: '{output_dir}'")
+        input_path = Path(input_dir).resolve()
+        output_path = Path(output_dir).resolve()
+    except Exception as e: # Catch potential errors during Path conversion/resolution
+        log.exception(f"Failed to resolve input/output paths: {input_dir}, {output_dir}")
+        raise ValueError(f"Invalid input/output path provided: {e}") from e
+    
+    log.info(f"Input directory: '{input_dir}'")
+    log.info(f"Output directory: '{output_dir}'")
     if overwrite:
-        logger.warning("Overwrite mode enabled.")
+        log.warning("Overwrite mode enabled.")
 
-    # Validate paths and create output dir (stricter Path validation)
-    try:
-        input_path = Path(input_dir)
-        output_path = Path(output_dir)
-    except (TypeError, ValueError) as e:
-        raise ValueError(f"Invalid path string provided: {e}") from e
+    # Validate resolved paths
     if not input_path.is_dir():
-        raise FileNotFoundError(f"Input directory not found: {input_dir}")
+        raise FileNotFoundError(f"Input directory not found: {input_path}")
     try:
         output_path.mkdir(parents=True, exist_ok=True)
     except OSError as e:
-        logger.error(f"Could not create output directory {output_dir}: {e}")
-        raise IOError(f"Could not create output directory {output_dir}") from e
+        log.error(f"Could not create output directory {output_path}: {e}")
+        raise IOError(f"Could not create output directory {output_path}") from e
 
     # Use the default config instance (or passed one if argument added)
     config = DEFAULT_CONFIG  # Modify here if config argument is added
@@ -1112,7 +1196,7 @@ def correct_whisperx_outputs(
     # --- Processing Loop ---
     success_count, error_count, skipped_count = 0, 0, 0
     file_iterator = _find_json_files(input_path)
-    disable_tqdm = not sys.stdout.isatty() or logger.level <= logging.DEBUG
+    disable_tqdm = not sys.stdout.isatty() or log.getEffectiveLevel() <= logging.DEBUG
     tqdm_iterator = tqdm(
         file_iterator, desc="Correcting JSON files", unit="file", disable=disable_tqdm
     )
@@ -1122,8 +1206,8 @@ def correct_whisperx_outputs(
             relative_path = input_file_path.relative_to(input_path)
             output_file_path = output_path / relative_path
             if not overwrite and output_file_path.exists():
-                if logger.isEnabledFor(logging.DEBUG):
-                    logger.debug(f"Skipping existing file: {output_file_path}")
+                if log.isEnabledFor(logging.DEBUG):
+                    log.debug(f"Skipping existing file: {output_file_path}")
                 skipped_count += 1
                 continue
             output_file_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1131,23 +1215,23 @@ def correct_whisperx_outputs(
             result = _process_single_file(input_file_path, output_file_path, config)
             if result["error"]:
                 error_count += 1
-                logger.error(
+                log.error(
                     f"Failed processing {input_file_path.name}: {result['error']}"
                 )  # Use .name for brevity
             else:
                 success_count += 1
         except Exception as e:
-            logger.exception(f"Critical error handling file {input_file_path.name}")
+            log.exception(f"Critical error handling file {input_file_path.name}")
             error_count += 1
 
     # --- Completion Summary ---
-    logger.info("Correction process finished.")
+    log.info("Correction process finished.")
     total_handled = success_count + error_count + skipped_count
-    logger.info(
+    log.info(
         f"Summary: {success_count} succeeded, {error_count} failed, {skipped_count} skipped (Total files considered: {total_handled})."
     )
     if error_count > 0:
-        logger.warning(
+        log.warning(
             f"{error_count} files failed during processing. Please review logs."
         )
 
@@ -1155,8 +1239,6 @@ def correct_whisperx_outputs(
 # --- Example Usage (Isolated) ---
 def run_example_test():
     """Runs a simple test case using example data."""
-    print(f"\nWhisperX Corrector Core Module v{__version__} - Running Example Test...")
-    logging.getLogger("whisperx_corrector_core").setLevel(logging.DEBUG)
 
     test_input_dir = Path("temp_test_input_core_v5")
     test_output_dir = Path("temp_test_output_core_v5")
@@ -1287,7 +1369,7 @@ def run_example_test():
             f"Running correction: {test_input_dir} -> {test_output_dir} (Log Level: DEBUG)"
         )
         correct_whisperx_outputs(
-            str(test_input_dir), str(test_output_dir), overwrite=True, log_level="DEBUG"
+            str(test_input_dir), str(test_output_dir), overwrite=True
         )
         print("\nTest correction finished.")
         print(f"Please inspect contents of '{test_output_dir}'")
@@ -1306,7 +1388,7 @@ def run_example_test():
             print("- ERROR: Output for malformed types file unexpectedly created.")
     except Exception as e:
         print(f"\nTest failed: {e}")
-        logger.exception("Test execution failed")
+        log.exception("Test execution failed")
     finally:
         pass  # Keep files
 
