@@ -19,21 +19,9 @@ It automates the process from individual audio tracks per speaker to a final tex
 4.  **Dialogue Assembly:** Merges transcriptions from different chunks and speakers into a coherent, timestamped SRT file.
 5.  **Script Generation:** Creates a final plain text script suitable for reading or further processing.
 
-> **Bonus:** Built with modularity, ready to be extended for LLM-based summarization or narrative generation.
+> **Incoming:** Built with modularity, ready to be extended for LLM-based summarization or narrative generation.
 
----
-
-## 🌱 Context and Origin
-
-## 🌱 Context and Origin
-
-EchoScribe was born from real-world D&D sessions recorded over **Discord** using the **[Craig bot](https://craig.chat/)** 🐻.
-
-- Craig provides **individual speaker tracks** (one audio file per speaker), which is ideal for high-quality transcription.
-- Early experiments involved merging these tracks and using the diarization feature within **[WhisperX](https://github.com/m-bain/whisperX)** itself (`--diarize` flag) to try and re-separate the speakers automatically.
-- However, this approach yielded **lower transcription accuracy** compared to processing the original, separate speaker tracks. Furthermore, the **speaker identification** performed by WhisperX diarization on the merged track was often not accurate enough for reliably generating speaker-labeled scripts automatically.
-
-As a result, EchoScribe is optimized to work best with **pre-separated audio tracks (one per speaker)**. It chunks these tracks based on combined silence and transcribes them individually *without* relying on diarization, leading to higher fidelity output suitable for reliable script generation. Support for diarization within the pipeline (`diarize=True`) remains an option but leverages WhisperX's diarization on *chunked* audio, which may have different performance characteristics.
+See the end of the README for **🌱 Context and Origin**.
 
 ---
 
@@ -63,7 +51,7 @@ As a result, EchoScribe is optimized to work best with **pre-separated audio tra
 
 ## 🐳 WhisperX Transcription via Docker
 
-EchoScribe leverages the powerful [WhisperX](https://github.com/m-bain/whisperX) library for transcription, alignment, and optional diarization. To ensure a consistent and reliable environment, especially regarding specific CUDA and cuDNN dependencies that can sometimes cause issues when installed directly, EchoScribe runs WhisperX within a **Docker container**.
+EchoScribe leverages the powerful **[WhisperX](https://github.com/m-bain/whisperX)** library for transcription and timestamp alignment. To ensure a consistent and reliable environment, especially regarding specific CUDA and cuDNN dependencies that can sometimes cause issues when installed directly, EchoScribe runs WhisperX within a **Docker container**.
 
 **Why Docker?**
 
@@ -111,7 +99,6 @@ Install the package in editable mode (`-e`) along with development dependencies 
 ```bash
 pip install -e ".[dev]"
 ```
-*(This assumes `pytest` and other dev tools are listed under `[project.optional-dependencies].dev` in `pyproject.toml`)*
 
 If you only want to install the package for usage (without test dependencies):
 ```bash
@@ -226,17 +213,17 @@ Place the resulting JSON files from `wx_output/` into the expected directory for
 
 ```
 your_session_name/
-├── tracks/                 # Input speaker audio files
-├── chunked_tracks/         # Output from Step 1
-├── wx_output/              # Output from Step 2 (WhisperX JSON)
-├── json_files/             # Output from Step 3 (Corrected JSON)
-├── srt_files/              # Output from Step 4 (Chunked SRTs)
-└── final_outputs/          # Final aggregated outputs
-    ├── merged_audio.flac   # Merged audio (from Step 1)
-    ├── cut_points.txt      # Silence cut points (from Step 1)
-    ├── merged_transcript.srt # Output from Step 5
-    ├── cleaned_transcript.srt # Output from Step 6
-    └── final_script.txt    # Output from Step 7
+├── tracks/                     # Input speaker audio files
+├── chunked_tracks/             # Output from Step 1
+├── wx_output/                  # Output from Step 2 (WhisperX JSON)
+├── json_files/                 # Output from Step 3 (Corrected JSON)
+├── srt_files/                  # Output from Step 4 (Chunked SRTs)
+└── final_outputs/              # Final aggregated outputs
+    ├── merged_audio.flac       # Merged audio (from Step 1)
+    ├── cut_points.txt          # Silence cut points (from Step 1)
+    ├── merged_transcript.srt   # Output from Step 5
+    ├── cleaned_transcript.srt  # Output from Step 6
+    └── final_script.txt        # Output from Step 7
 ```
 
 ---
@@ -250,6 +237,26 @@ To run the unit tests:
     ```bash
     pytest
     ```
+
+---
+
+## 🌱 Context and Origin
+
+EchoScribe started as a personal quest with a perhaps ambitious goal: I wanted to transcribe my D&D group's recorded sessions, dreaming of potentially weaving those adventures into a novel someday.
+
+Like many D&D groups using Discord, we used the **[Craig bot](https://craig.chat/)** 🐻, which provides separate audio tracks for each speaker – a feature that proved crucial later on. My first attempts, however, involved manually chunking the audio using tools like Audacity and trying basic transcription models. The results weren't great, especially handling the long, awkward silences common in tabletop recordings.
+
+Discovering **[WhisperX](https://github.com/m-bain/whisperX)** was a significant step forward. My initial experiments focused on simplifying the input by using a *merged* audio track and leveraging WhisperX's built-in diarization (`--diarize`) to separate speakers. Unfortunately, I found this approach yielded lower transcription accuracy compared to using the separate tracks from Craig. Furthermore, the automatic speaker identification often wasn't reliable enough for the clean, speaker-attributed script I needed.
+
+This led me back to using the individual speaker tracks. Processing these separately gave much clearer transcriptions. At this stage, the process involved several independent Python scripts: one to merge and detect silence for chunking points, another to reassemble the script after transcription, and finally, manually prompting Large Language Models (LLMs) to generate summaries or even pre-novelized versions of the sessions.
+
+While functional for personal use, this multi-script, manual process was cumbersome. I wanted a fully automated pipeline that could run right after a session, delivering not just a transcript but potentially those initial LLM outputs automatically.
+
+Realizing others might have similar goals – whether for novel writing, creating campaign summaries, session recaps for players, or other creative uses – the idea formed to transform these scripts into a more robust, automated, and shareable library.
+
+That's where this version of EchoScribe comes from. It has been significantly refactored and improved from those initial scripts into a structured, installable Python library (`echoscribe`) with considerable assistance from Large Language Models (Gemini 2.5 Pro, GPT-4o, and Claude 3.7 Sonnet*). The goal of this LLM-guided refactoring was to consolidate the steps, enhance robustness, add proper error handling, improve maintainability through modern Python practices, incorporate unit testing, increase usability, and prepare the code for open-sourcing on GitHub. The development involved an iterative process of generation, detailed review, and refinement.
+
+Okay, here's a TL;DR version summarizing the key points from the detailed "Context and Origin" story:
 
 ---
 
