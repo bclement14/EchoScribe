@@ -21,7 +21,7 @@ It automates the process from individual audio tracks per speaker to a final tex
 
 > **Incoming:** Built with modularity, ready to be extended for LLM-based summarization or narrative generation.
 
-See the end of the README for **🌱 Context and Origin**.
+Read the full story behind EchoScribe in the **🌱 Context and Origin** section.
 
 ---
 
@@ -255,8 +255,6 @@ While functional for personal use, this multi-script, manual process was cumbers
 Realizing others might have similar goals – whether for novel writing, creating campaign summaries, session recaps for players, or other creative uses – the idea formed to transform these scripts into a more robust, automated, and shareable library.
 
 That's where this version of EchoScribe comes from. It has been significantly refactored and improved from those initial scripts into a structured, installable Python library (`echoscribe`) with considerable assistance from Large Language Models (Gemini 2.5 Pro, GPT-4o, and Claude 3.7 Sonnet*). The goal of this LLM-guided refactoring was to consolidate the steps, enhance robustness, add proper error handling, improve maintainability through modern Python practices, incorporate unit testing, increase usability, and prepare the code for open-sourcing on GitHub. The development involved an iterative process of generation, detailed review, and refinement.
-
-Okay, here's a TL;DR version summarizing the key points from the detailed "Context and Origin" story:
 
 ---
 
