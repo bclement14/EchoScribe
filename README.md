@@ -261,6 +261,9 @@ That's where this version of EchoScribe comes from. It has been significantly re
 
 ### Next building block
 -   [ ] **LLM Integration:** Summarization, narrative generation, character dialogue extraction through LLM API.
+-   [ ] **LLM Integration:** Summarization, narrative generation, character dialogue extraction through LLM API.
+-   [ ] **Pipeline Running Example:** Find audio sample to allow pipeline running for testing.
+  
 
 ### Possible evolutions
 -   [ ] **Direct Discord Bot Integration:** Streamline the process from recording to script.
