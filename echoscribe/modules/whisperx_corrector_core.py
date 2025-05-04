@@ -1167,11 +1167,6 @@ def correct_whisperx_outputs(
         raise TypeError("overwrite must be a boolean")
     
     # if not isinstance(config, WhisperXCorrectorConfig): raise TypeError("config must be an instance of WhisperXCorrectorConfig") # If config passed
-
-    # --- Setup ---
-    log.info(
-        f"Starting WhisperX output correction (Core v{__version__})"
-    )
     
     # Convert to Path objects and resolve EARLY for consistent handling
     try:
@@ -1244,7 +1239,6 @@ def correct_whisperx_outputs(
 # --- Example Usage (Isolated) ---
 def run_example_test():
     """Runs a simple test case using example data."""
-    print(f"\nWhisperX Corrector Core Module v{__version__} - Running Example Test...")
 
     test_input_dir = Path("temp_test_input_core_v5")
     test_output_dir = Path("temp_test_output_core_v5")
