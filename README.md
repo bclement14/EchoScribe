@@ -1,7 +1,6 @@
 # 🎲 EchoScribe — Turn Your D&D Sessions into Living Stories 🎤 ➔ 📝
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-<!-- Optional: Add build status, PyPI version etc. badges here -->
 
 > Capture the magic of your tabletop adventures — from chaotic voices to polished, readable narratives.
 
@@ -19,7 +18,7 @@ It automates the process from individual audio tracks per speaker to a final tex
 4.  **Dialogue Assembly:** Merges transcriptions from different chunks and speakers into a coherent, timestamped SRT file.
 5.  **Script Generation:** Creates a final plain text script suitable for reading or further processing.
 
-> **Incoming:** Built with modularity, ready to be extended for LLM-based summarization or narrative generation.
+> **Incoming:** Module for LLM-based summarization or narrative generation.
 
 Read the full story behind EchoScribe in the **🌱 Context and Origin** section.
 
