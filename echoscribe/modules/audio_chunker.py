@@ -1,6 +1,8 @@
 # echoscribe/modules/treat_flac_tracks.py
 
 import logging
+import numpy as np
+import sys
 from pathlib import Path
 from typing import List, Tuple
 from pydub import AudioSegment, silence
@@ -8,6 +10,7 @@ from pydub.exceptions import CouldntDecodeError
 import os
 from tqdm import tqdm
 from dataclasses import dataclass, field
+from pydub.utils import mediainfo
 
 # --- Module Logger ---
 log = logging.getLogger(__name__)
@@ -81,7 +84,7 @@ def _merge_tracks_high_ram(speaker_files: List[Path], output_file: Path) -> None
 
         # Overlay subsequent tracks
         # Disable tqdm if logging level is DEBUG or lower to avoid interleaving
-        disable_tqdm = not sys.stdout.isatty() or log.level <= logging.DEBUG
+        disable_tqdm = not sys.stdout.isatty() or log.getEffectiveLevel() <= logging.DEBUG
         for track_path in tqdm(speaker_files[1:], desc="Merging tracks", disable=disable_tqdm):
             log.debug(f"Loading and overlaying track: {track_path}")
             track = AudioSegment.from_file(track_path, format="flac")
@@ -110,7 +113,8 @@ def _merge_tracks_low_ram(speaker_files: List[Path], output_file: Path, chunk_si
     try:
         # Load tracks (still requires loading metadata, potentially some data)
         # Disable tqdm if logging level is DEBUG or lower
-        disable_tqdm = not sys.stdout.isatty() or log.level <= logging.DEBUG
+        print(not sys.stdout.isatty())
+        disable_tqdm = not sys.stdout.isatty() or log.getEffectiveLevel() <= logging.DEBUG
         log.debug("Loading track metadata...")
         tracks = [AudioSegment.from_file(file, format="flac") for file in tqdm(speaker_files, desc="Loading tracks", disable=disable_tqdm)]
         log.debug("Track metadata loaded.")
@@ -181,26 +185,55 @@ def _detect_silence_high_ram(audio_file: Path, config: ChunkingConfig) -> List[T
 
 
 def _detect_silence_low_ram(audio_file: Path, config: ChunkingConfig) -> List[Tuple[float, float]]:
-    """Detect silence incrementally to reduce RAM usage."""
-    log.info("Detecting silences (low RAM mode)...")
+    """Detect silence incrementally using partial loading (improved RAM usage)."""
+    log.info("Detecting silences (low RAM mode - partial loading)...")
     try:
-        log.debug(f"Loading audio file metadata: {audio_file}")
-        audio = AudioSegment.from_file(audio_file, format="flac")
-        total_length_ms = len(audio)
+        # --- Get duration using ffprobe via pydub.utils (lighter than loading) ---
+        log.debug(f"Getting audio duration for {audio_file} using mediainfo...")
+        info = mediainfo(str(audio_file)) # mediainfo expects string path
+        total_duration_s = float(info['duration'])
+        total_length_ms = int(total_duration_s * 1000)
+        log.info(f"Audio duration: {total_duration_s:.2f}s ({total_length_ms}ms)")
+        # --- End Duration Check ---
+
         if total_length_ms == 0:
-            log.warning(f"Audio file {audio_file} is empty, no silences to detect.")
+            log.warning(f"Audio file {audio_file} is empty or has zero duration.")
             return []
 
-        log.info(f"Audio length: {total_length_ms / 1000:.2f}s. Processing in {config.incremental_chunk_size_ms}ms chunks.")
         all_silent_ranges_s: List[Tuple[float, float]] = []
-        disable_tqdm = not sys.stdout.isatty() or log.level <= logging.DEBUG
+        chunk_size_ms = config.incremental_chunk_size_ms
+        # Overlap chunks slightly to catch silences spanning boundaries? (Adds complexity)
+        # overlap_ms = config.min_silence_duration_ms # Example overlap
+        overlap_ms = 0 # Keep it simple for now
 
-        for i in tqdm(range(0, total_length_ms, config.incremental_chunk_size_ms), desc="Analyzing chunks for silence", disable=disable_tqdm):
+        log.info(f"Processing in {chunk_size_ms}ms chunks...")
+        disable_tqdm = not sys.stdout.isatty() or log.getEffectiveLevel() <= logging.DEBUG
+
+        for i in tqdm(range(0, total_length_ms, chunk_size_ms), desc="Analyzing chunks for silence", disable=disable_tqdm):
             chunk_start_ms = i
-            chunk_end_ms = min(i + config.incremental_chunk_size_ms, total_length_ms)
-            log.debug(f"Processing chunk: {chunk_start_ms}ms - {chunk_end_ms}ms")
-            chunk = audio[chunk_start_ms:chunk_end_ms]
+            # Load only the current chunk (+ overlap?)
+            # Duration to load: chunk_size, but clamp at the end of the file
+            load_duration_ms = min(chunk_size_ms + overlap_ms, total_length_ms - chunk_start_ms)
 
+            if load_duration_ms <= 0: continue # Should not happen with range, but safety check
+
+            log.debug(f"Loading chunk: Offset={chunk_start_ms}ms, Duration={load_duration_ms}ms")
+            try:
+                # --- Load only the necessary chunk ---
+                chunk = AudioSegment.from_file(
+                    audio_file,
+                    format="flac",
+                    start_second=chunk_start_ms / 1000.0, # from_file uses seconds for start
+                    duration=load_duration_ms / 1000.0     # duration also in seconds
+                )
+            except EOFError:
+                log.warning(f"Reached EOF unexpectedly while reading chunk starting at {chunk_start_ms}ms. Stopping silence detection.")
+                break # Stop if we can't read a chunk
+            except Exception as load_err:
+                 log.error(f"Error loading audio chunk starting at {chunk_start_ms}ms: {load_err}. Skipping chunk.")
+                 continue # Skip this chunk
+
+            log.debug(f"Detecting silence in loaded chunk ({len(chunk)}ms)...")
             chunk_silences_ms = silence.detect_silence(
                 chunk,
                 min_silence_len=config.min_silence_duration_ms,
@@ -209,20 +242,41 @@ def _detect_silence_low_ram(audio_file: Path, config: ChunkingConfig) -> List[Tu
 
             # Adjust timestamps relative to the whole file and convert to seconds
             for start_in_chunk_ms, end_in_chunk_ms in chunk_silences_ms:
-                start_s = (chunk_start_ms + start_in_chunk_ms) / 1000
-                end_s = (chunk_start_ms + end_in_chunk_ms) / 1000
-                all_silent_ranges_s.append((start_s, end_s))
+                # Important: Add the offset of the CHUNK start time
+                global_start_s = (chunk_start_ms + start_in_chunk_ms) / 1000.0
+                global_end_s = (chunk_start_ms + end_in_chunk_ms) / 1000.0
 
-        # Note: This simple concatenation might miss silences spanning chunk boundaries.
-        # A more robust approach would involve analyzing overlapping chunks or merging adjacent ranges.
-        # For simplicity, we keep the direct concatenation approach for now.
-        log.info(f"Detected {len(all_silent_ranges_s)} potential silent ranges (boundary accuracy may vary in low RAM mode).")
-        # Optional: Add merging logic for adjacent/overlapping ranges if needed.
-        return all_silent_ranges_s
+                # Avoid adding silences that might be artifacts of chunk boundaries if not using overlap
+                # Or if using overlap, adjust to avoid double counting (more complex)
+                # Simple approach: Ensure the silence is fully within the non-overlapped part?
+                # For now, we add all detected silences within the loaded chunk duration
+
+                all_silent_ranges_s.append((global_start_s, global_end_s))
+
+        log.info(f"Detected {len(all_silent_ranges_s)} potential silent ranges (boundary accuracy may vary).")
+        # Optional: Add merging logic for adjacent/overlapping ranges detected across chunks.
+        # Sort and merge overlapping/adjacent intervals
+        if not all_silent_ranges_s: return []
+        all_silent_ranges_s.sort()
+        merged_ranges = [list(all_silent_ranges_s[0])] # Start with the first range as a mutable list
+        for next_start, next_end in all_silent_ranges_s[1:]:
+            last_start, last_end = merged_ranges[-1]
+            # Merge if next start is before or exactly at the last end
+            if next_start <= last_end:
+                 merged_ranges[-1][1] = max(last_end, next_end) # Extend the end of the last range
+            else:
+                 merged_ranges.append([next_start, next_end]) # Start a new range
+        # Convert back to tuples
+        final_merged_ranges = [tuple(r) for r in merged_ranges]
+        log.info(f"Merged into {len(final_merged_ranges)} final silent ranges.")
+        return final_merged_ranges
 
     except CouldntDecodeError as e:
-        log.exception(f"Could not decode audio file for silence detection: {audio_file}")
-        raise IOError(f"Failed to decode audio file: {e}") from e
+        log.exception(f"Could not decode audio file {audio_file}: {e}")
+        raise IOError(f"Failed to decode audio file {audio_file}") from e
+    except KeyError as e:
+         log.exception(f"Failed to get duration from mediainfo for {audio_file} - ffprobe/ffmpeg installed and working? Error: {e}")
+         raise RuntimeError(f"Could not get audio duration for {audio_file}") from e
     except Exception as e:
         log.exception(f"Error during low RAM silence detection: {e}")
         raise RuntimeError("Silence detection failed") from e
@@ -364,13 +418,8 @@ def split_tracks(
 
     num_segments = len(cut_points_s) - 1
     log.info(f"Splitting {len(speaker_files)} tracks into {num_segments} segments...")
-    try:
-        output_dir.mkdir(parents=True, exist_ok=True)
-    except OSError as e:
-        log.exception(f"Failed to create output directory for split tracks: {output_dir}")
-        raise IOError(f"Could not create output directory {output_dir}") from e
-
-    disable_tqdm = not sys.stdout.isatty() or log.level <= logging.DEBUG
+    output_dir.mkdir(parents=True, exist_ok=True) # Ensure creation again just before loop
+    disable_tqdm = not sys.stdout.isatty() or log.getEffectiveLevel() <= logging.DEBUG
 
     for file_path in tqdm(speaker_files, desc="Splitting files", disable=disable_tqdm):
         log.debug(f"Processing file for splitting: {file_path}")
@@ -378,40 +427,41 @@ def split_tracks(
             if not file_path.is_file():
                  log.warning(f"Speaker file not found, skipping: {file_path}")
                  continue
+            log.debug(f"Loading audio for {file_path.name}...")
             audio = AudioSegment.from_file(file_path, format="flac")
+            log.debug(f"Audio loaded (Duration: {len(audio)/1000.0:.2f}s). Splitting into chunks...")
 
             for i in range(num_segments):
-                start_s = cut_points_s[i]
-                end_s = cut_points_s[i+1]
-                start_ms = int(start_s * 1000)
-                end_ms = int(end_s * 1000)
-
-                # Ensure start/end are within audio bounds
-                start_ms = max(0, start_ms)
-                end_ms = min(len(audio), end_ms)
+                start_s, end_s = cut_points_s[i], cut_points_s[i+1]
+                start_ms, end_ms = int(start_s * 1000), int(end_s * 1000)
+                start_ms, end_ms = max(0, start_ms), min(len(audio), end_ms)
 
                 if start_ms >= end_ms:
-                     log.warning(f"Skipping zero/negative duration chunk {i+1} for file {file_path.name} ({start_ms}ms - {end_ms}ms)")
+                     log.warning(f"Skipping zero/negative duration chunk {i+1} for {file_path.name} ({start_ms}ms - {end_ms}ms)")
                      continue
 
                 log.debug(f"Extracting chunk {i+1}: {start_ms}ms - {end_ms}ms from {file_path.name}")
                 segment = audio[start_ms:end_ms]
 
-                # Naming convention: speaker-chunkIndex.flac (e.g., speakerA-01.flac)
-                indice = f"{i+1:02d}" # Zero-padded 2-digit index (1-based)
+                indice = f"{i+1:02d}"
                 output_filename = f"{file_path.stem}-{indice}.flac"
                 output_filepath = output_dir / output_filename
 
+                # Optional: Explicit delete before writing if overwrite is crucial
+                # if output_filepath.exists():
+                #     log.warning(f"Output chunk exists, overwriting: {output_filepath}")
+                #     try: output_filepath.unlink()
+                #     except OSError as del_e: log.error(f"Could not delete existing chunk {output_filepath}: {del_e}")
+
                 log.debug(f"Exporting chunk {i+1} to {output_filepath}")
                 segment.export(output_filepath, format="flac")
+                log.debug(f"Chunk {i+1} for {file_path.name} exported successfully.")
 
         except CouldntDecodeError as e:
-            log.exception(f"Could not decode speaker file {file_path}, skipping splitting for this file.")
-            # Optionally raise an error or continue with other files
-            continue # Continue with the next file
+            log.exception(f"Could not decode speaker file {file_path}, skipping splitting.")
+            continue
         except Exception as e:
-            log.exception(f"Error splitting file {file_path}, skipping this file.")
-            # Optionally raise an error
+            log.exception(f"Error splitting file {file_path}, skipping.")
             continue
 
     log.info(f"Splitting complete. Chunked files saved in {output_dir}")
@@ -510,7 +560,7 @@ def run_chunking_example():
     print("\n--- Running Audio Chunking Example ---")
     # Configure logging for example
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-    log.setLevel(logging.INFO) # Ensure module logger is also at INFO
+    log.setLevel(logging.INFO) # Ensure module log is also at INFO
 
     # Define test paths relative to current dir
     base_test_dir = Path("./temp_chunking_test")

@@ -1,22 +1,44 @@
-[build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "echoscribe"
-version = "0.1.0"
+version = "0.1.1" 
 description = "A modular audio processing pipeline for chunking, transcribing with WhisperX, and producing readable scripts."
 authors = [
-    { name="Your Name", email="your.email@example.com" }
+    { name="Benjamin CLEMENT", email="benji.usable@gmail.com" }
 ]
 readme = "README.md"
 requires-python = ">=3.8"
+license = { file = "LICENSE" }
+
+# Keywords
+keywords = ['whisperx', 'transcription', 'audio', 'pipeline', 'speech-recognition', 'srt', 'subtitles', 'podcast', 'meeting']
+
+# PyPI classifiers for categorization
+classifiers = [
+    "Development Status :: 3 - Alpha", 
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: GNU General Public License v3",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Multimedia :: Sound/Audio :: Analysis",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+    "Topic :: Text Processing :: Linguistic",
+    "Topic :: Utilities",
+]
+
 dependencies = [
     "pydub>=0.25.1",
     "srt>=3.5.2",
-    "tqdm>=4.64.1"
+    "tqdm>=4.64.1",
+    "numpy>=1.20.0", 
 ]
 
-[project.urls]
-"Homepage" = "https://github.com/bclement14/echoscribe"
-"Repository" = "https://github.com/bclement14/echoscribe"
+# Optional: Define dependencies needed for development (testing, linting, building)
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
