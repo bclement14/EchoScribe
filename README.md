@@ -18,7 +18,7 @@ It automates the process from individual audio tracks per speaker to a final tex
 4.  **Dialogue Assembly:** Merges transcriptions from different chunks and speakers into a coherent, timestamped SRT file.
 5.  **Script Generation:** Creates a final plain text script suitable for reading or further processing.
 
-> **Incoming:** Module for LLM-based summarization or narrative generation.
+>> **Incoming:** Module for LLM-based summarization or narrative generation.
 
 Read the full story behind EchoScribe in the **🌱 Context and Origin** section.
 
