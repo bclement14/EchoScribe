@@ -5,18 +5,8 @@ Purpose:
     Provides core functions for advanced correction of WhisperX JSON outputs,
     including a simplified adapter function for pipeline integration. Retains
     sophisticated correction logic while removing standalone application features.
-    This version (v1.1.5) incorporates final refinements based on review feedback,
-    including stricter type/path validation and enhanced documentation.
 
-Key Improvements in v1.1.5:
-    - Added try/except block around Path() instantiation in adapter function.
-    - Enhanced validation in `load_json_file` to check segment start/end types.
-    - Reviewed and refined type hints for more specificity.
-    - Ensured explicit return types for all functions.
-    - Added examples and clarifications to key docstrings.
-    - Verified consistent use of exception chaining (`raise ... from e`).
-
-Previous Key Features (Preserved):
+Key Features (Preserved):
     - Explicit config passing (using frozen dataclass).
     - SeverityLevel Enum for anomaly classification.
     - Robust edge-case handling (e.g., zero duration segments).
@@ -47,10 +37,6 @@ from numbers import Number  # For type checking
 from types import (
     MappingProxyType,
 )  # For immutable default config view (if needed, though frozen dataclass handles it)
-
-# --- Version Information ---
-__version__ = "1.1.5-core"  # Final refinement based on reviews
-
 
 # --- Type Definitions & Enums ---
 # (TypedDicts remain suitable here for static analysis benefits)
