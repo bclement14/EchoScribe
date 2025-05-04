@@ -405,7 +405,7 @@ def run_pipeline(
         else: log.warning(f"Pipeline finished, but steps executed ({steps_executed}) may not match requested ({config.steps_to_run}). Outputs: {final_folder}")
     else:
         log.error(f"Pipeline finished with errors after executing steps: {steps_executed}. Check logs.")
-        # Optional: raise RuntimeError("Pipeline failed during execution.")
+        raise RuntimeError("Pipeline failed during execution.")
 
 # Example of interactive usage
 # if __name__ == "__main__": run_pipeline(...)
