@@ -273,8 +273,8 @@ That's where this version of EchoScribe comes from. It has been significantly re
 
 This project is open-source under the **GNU GENERAL PUBLIC LICENSE v3.0**. See the `LICENSE` file for details.
 
----
+<!-- ---
 
 # 📣 Join the Adventure!
 
-Contributions, feedback, and feature requests are welcome! Help make EchoScribe the ultimate tool for chronicling tabletop stories. Create an issue or submit a pull request. ⚔️📜
+Contributions, feedback, and feature requests are welcome! Help make EchoScribe the ultimate tool for chronicling tabletop stories. Create an issue or submit a pull request. ⚔️📜 -->
