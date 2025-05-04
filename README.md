@@ -244,7 +244,7 @@ To run the unit tests:
 
 EchoScribe started as a personal quest with a perhaps ambitious goal: I wanted to transcribe my D&D group's recorded sessions, dreaming of potentially weaving those adventures into a novel someday.
 
-Like many D&D groups using Discord, we used the **[Craig bot](https://craig.chat/)** 🐻, which provides separate audio tracks for each speaker – a feature that proved crucial later on. My first attempts, however, involved manually chunking the audio using tools like Audacity and trying basic transcription models. The results weren't great, especially handling the long, awkward silences common in tabletop recordings.
+Like many D&D groups using Discord, we used the **[Craig bot](https://craig.chat/)** 🐻, which provides separate audio tracks for each speaker – a feature that proved crucial later on. My first attempts, however, involved manually chunking the audio using tools like Audacity and trying [Whisper](https://github.com/openai/whisper) transcription model. The results weren't great, especially handling the silences on each speaker recording corresponding to other speakers talking (sometime there are more silences than actual speach).
 
 Discovering **[WhisperX](https://github.com/m-bain/whisperX)** was a significant step forward. My initial experiments focused on simplifying the input by using a *merged* audio track and leveraging WhisperX's built-in diarization (`--diarize`) to separate speakers. Unfortunately, I found this approach yielded lower transcription accuracy compared to using the separate tracks from Craig. Furthermore, the automatic speaker identification often wasn't reliable enough for the clean, speaker-attributed script I needed.
 
@@ -260,11 +260,13 @@ That's where this version of EchoScribe comes from. It has been significantly re
 
 ## 💡 Future Directions
 
--   [ ] **LLM Integration:** Summarization, narrative generation, character dialogue extraction.
+# Next building block
+-   [ ] **LLM Integration:** Summarization, narrative generation, character dialogue extraction through LLM API.
+
+# Possible evolutions
+-   [ ] **Direct Discord Bot Integration:** Streamline the process from recording to script.
 -   [ ] **Alternative ASR Models:** Integration options beyond WhisperX.
 -   [ ] **Configuration Files:** Allow pipeline configuration via YAML/TOML files.
--   [ ] **UI/Web Interface:** A simple front-end for easier use.
--   [ ] **Direct Discord Bot Integration:** Streamline the process from recording to script.
 
 ---
 
