@@ -1,4 +1,5 @@
-# 🎲 EchoScribe — Turn Your D&D Sessions into Living Stories 🎤 ➔ 📝
+<p style="text-align: center;"> # 🎲 EchoScribe 🎲 </p> 
+<p style="text-align: center;"> # Turn Your D&D Sessions into Living Stories 🎤 ➔ 📝 </p> 
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
