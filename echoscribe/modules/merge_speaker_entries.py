@@ -141,3 +141,102 @@ def merge_speaker_entries(
     except Exception as e: # Catch writing/compose errors
         log.exception(f"Failed to write output SRT file: {output_path}")
         raise IOError(f"Failed to write output SRT file {output_path}") from e
+    
+# --- Example Usage ---
+def run_merge_speakers_example():
+    """Example function to demonstrate merging speaker entries."""
+    print("\n--- Running Merge Speaker Entries Example ---")
+    # Setup basic logging for the example run
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    # Ensure the module's logger also uses this level for the example
+    logging.getLogger("echoscribe.modules.merge_speaker_entries").setLevel(logging.INFO)
+
+    # Define test paths relative to current execution (or specify absolute)
+    base_test_dir = Path("./temp_mergespeakers_test_v2") # Use unique dir name
+    input_file = base_test_dir / "merged_input.srt"
+    output_file = base_test_dir / "cleaned_output.srt"
+
+    # Define dummy input SRT content for the test
+    dummy_srt_content = """1
+00:00:01,000 --> 00:00:03,000
+[Alice] Hello Bob.
+
+2
+00:00:03,500 --> 00:00:05,000
+[Alice] How are you?
+
+3
+00:00:06,000 --> 00:00:08,000
+[Bob] I am fine, Alice.
+
+4
+00:00:08,500 --> 00:00:10,000
+[Bob] Thanks for asking.
+
+5
+00:00:11,000 --> 00:00:12,000
+Untagged line.
+
+6
+00:00:12,500 --> 00:00:14,000
+[Alice] Good to hear.
+
+7
+00:00:14,500 --> 00:00:15,500
+[Alice] Really good.
+""" # Added another Alice line
+
+    # --- Test Execution ---
+    try:
+        # 1. Create directories and dummy input file
+        print(f"Creating dummy input SRT file: {input_file}...")
+        base_test_dir.mkdir(parents=True, exist_ok=True)
+        input_file.write_text(dummy_srt_content, encoding='utf-8')
+        print("Dummy file created.")
+
+        # 2. Run the merge function
+        print("\nRunning merge_speaker_entries function...")
+        merge_speaker_entries(input_srt_file=input_file, output_srt_file=output_file)
+        print("\nSpeaker merge example finished.")
+        print(f"Check output file: {output_file}")
+
+        # 3. Verify output
+        if output_file.exists() and output_file.stat().st_size > 0:
+             print("Cleaned SRT file created successfully.")
+             print("\n--- Cleaned SRT Content (Should Retain Tags & Merged Lines) ---")
+             output_content_read = output_file.read_text(encoding='utf-8')
+             print(output_content_read)
+             print("--- End Cleaned SRT ---")
+
+             # Optional: Add programmatic check if needed
+             expected_lines = [
+                 "1", "00:00:01,000 --> 00:00:05,000", "[Alice] Hello Bob. How are you?", "",
+                 "2", "00:00:06,000 --> 00:00:10,000", "[Bob] I am fine, Alice. Thanks for asking.", "",
+                 "3", "00:00:11,000 --> 00:00:12,000", "Untagged line.", "",
+                 "4", "00:00:12,500 --> 00:00:15,500", "[Alice] Good to hear. Really good.", "" # Alice lines 6&7 merged
+             ]
+             # Normalize whitespace for comparison
+             actual_lines = [line.strip() for line in output_content_read.strip().splitlines()]
+             expected_lines_stripped = [line.strip() for line in expected_lines]
+             assert actual_lines == expected_lines_stripped, "Output content differs from expected!"
+             print("\nContent Verified Programmatically.")
+
+        else:
+             print("ERROR: Cleaned SRT file not found or is empty.")
+
+    except Exception as e:
+        print(f"\nMerge speaker example failed: {e}")
+        # Use the module logger, which should be configured by basicConfig now
+        log.exception("Merge speaker example execution failed")
+    finally:
+        # Optional: Clean up dummy files/dirs (commented out by default)
+        # import shutil
+        # print("\nCleaning up test directories...")
+        # if base_test_dir.exists():
+        #     shutil.rmtree(base_test_dir)
+        # print("Cleanup complete.")
+        pass # Keep files for inspection
+
+# Make the example runnable when the script is executed directly
+if __name__ == "__main__":
+    run_merge_speakers_example()

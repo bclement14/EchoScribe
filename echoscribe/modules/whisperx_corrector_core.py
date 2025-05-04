@@ -642,15 +642,12 @@ def distribute_words_evenly(
         accumulated_word_duration += actual_word_duration # Add duration of the word just placed
         current_time = word["end"] # Move cursor to the end of this word
 
-        # --- Corrected Gap Logic ---
-        # Only add a gap if it's not the last word AND if there was actually
-        # time allocated for words initially (meaning gaps *could* fit).
         # If time_for_words was <= 0, stack words without gaps.
         if i < len(words) - 1 and time_for_words > 0:
              current_time = min(segment_end, current_time + config.min_gap_duration)
         # Ensure current_time doesn't exceed segment end after potentially adding gap
         current_time = min(current_time, segment_end)
-        # --- End Corrected Gap Logic ---
+
 
 
     # --- Final Adjustment ---

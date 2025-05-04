@@ -132,11 +132,11 @@ def test_merge_speaker_entries_standard(tmp_path: Path):
     output_subs = list(srt.parse(output_content))
 
     assert len(output_subs) == 3 # 5 entries merged into 3
-    assert output_subs[0].content == "Hello Bob. How are you?"
+    assert output_subs[0].content == "[Alice] Hello Bob. How are you?"
     assert output_subs[0].end == srt.srt_timestamp_to_timedelta("00:00:05,000")
-    assert output_subs[1].content == "I am fine, Alice. Thanks for asking."
+    assert output_subs[1].content == "[Bob] I am fine, Alice. Thanks for asking."
     assert output_subs[1].end == srt.srt_timestamp_to_timedelta("00:00:10,000")
-    assert output_subs[2].content == "Good."
+    assert output_subs[2].content == "[Alice] Good." # Last one wasn't merged
     assert output_subs[2].end == srt.srt_timestamp_to_timedelta("00:00:12,000")
     # Also compare full text content for exactness
     # Need a way to compare SRT content ignoring minor whitespace diffs potentially caused by compose
@@ -157,10 +157,10 @@ def test_merge_speaker_entries_no_merge(tmp_path: Path):
 
     assert len(output_subs) == 4 # Should remain 4 entries
     # Check content matches original (after tag removal)
-    assert output_subs[0].content == "Hello Bob."
-    assert output_subs[1].content == "Hi Alice."
-    assert output_subs[2].content == "How are you?"
-    assert output_subs[3].content == "Fine, thanks."
+    assert output_subs[0].content == "[Alice] Hello Bob."
+    assert output_subs[1].content == "[Bob] Hi Alice."
+    assert output_subs[2].content == "[Alice] How are you?"
+    assert output_subs[3].content == "[Bob] Fine, thanks."
     # assert output_content.strip() == EXPECTED_NO_MERGE_CONTENT.strip()
 
 def test_merge_speaker_entries_with_untagged(tmp_path: Path):
@@ -176,11 +176,11 @@ def test_merge_speaker_entries_with_untagged(tmp_path: Path):
     output_subs = list(srt.parse(output_content))
 
     assert len(output_subs) == 3 # [Alice], [Untagged], [Bob]
-    assert output_subs[0].content == "Hello Bob. How are you?"
+    assert output_subs[0].content == "[Alice] Hello Bob. How are you?"
     assert output_subs[0].end == srt.srt_timestamp_to_timedelta("00:00:05,000")
-    assert output_subs[1].content == "This is an untagged line." # Untagged line preserved
+    assert output_subs[1].content == "This is an untagged line." # Untagged line unchanged
     assert output_subs[1].end == srt.srt_timestamp_to_timedelta("00:00:08,000")
-    assert output_subs[2].content == "I am Bob. Yes, Bob."
+    assert output_subs[2].content == "[Bob] I am Bob. Yes, Bob."
     assert output_subs[2].end == srt.srt_timestamp_to_timedelta("00:00:12,000")
     # assert output_content.strip() == EXPECTED_UNTAGGED_CONTENT.strip()
 

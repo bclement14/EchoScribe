@@ -44,14 +44,13 @@ Okay.
 00:00:08,000 --> 00:00:09,500
 """ # Missing text line
 
-# Define expected script output for the sample SRT
-EXPECTED_SCRIPT_OUTPUT = """Hello there. This is line two.
+EXPECTED_SCRIPT_OUTPUT = """[Speaker A] Hello there. This is line two.
 
-Hi! How are you?
+[Speaker B] Hi! How are you?
 
 Okay.
 
-I'm doing well, thanks. Multi-line again."""
+[Speaker A] I'm doing well, thanks. Multi-line again."""
 
 # --- Test Functions ---
 
@@ -60,10 +59,9 @@ def test_srt_to_script_standard(tmp_path: Path):
     input_srt = tmp_path / "input.srt"
     output_script = tmp_path / "output.txt"
     input_srt.write_text(SAMPLE_SRT_CONTENT, encoding="utf-8")
-
     srt_to_script(input_srt_path=input_srt, output_script_path=output_script)
-
     assert output_script.exists()
+    # --- Assert against EXPECTED_SCRIPT_OUTPUT ---
     assert output_script.read_text(encoding="utf-8") == EXPECTED_SCRIPT_OUTPUT
 
 def test_srt_to_script_output_dir_creation(tmp_path: Path):
@@ -105,7 +103,7 @@ def test_srt_to_script_malformed_blocks(tmp_path: Path):
 
     assert output_script.exists()
     # Expect only the text from the valid blocks, malformed ones skipped
-    expected_output = "First line okay.\n\nOkay." # Block 2 ignored, Block 4 had no text line
+    expected_output = "[Speaker A] First line okay.\n\nOkay."
     assert output_script.read_text(encoding="utf-8") == expected_output
 
 def test_srt_to_script_input_not_found(tmp_path: Path):
