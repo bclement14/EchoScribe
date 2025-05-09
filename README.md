@@ -241,26 +241,28 @@ To run the unit tests:
 
 ## 🌱 Context and Origin
 
-EchoScribe started as a personal quest with a perhaps ambitious goal: I wanted to transcribe my D&D group's recorded sessions, dreaming of potentially weaving those adventures into a novel someday.
+EchoScribe started as a personal quest with a perhaps ambitious goal: I wanted to automatically transcribe my D&D group's recorded sessions and use LLMs to generate summaries or session-based stories, dreaming of potentially weaving those adventures into a novel someday.
 
-Like many D&D groups using Discord, we used the **[Craig bot](https://craig.chat/)** 🐻, which provides separate audio tracks for each speaker – a feature that proved crucial later on. My first attempts, however, involved manually chunking the audio using tools like Audacity and trying [Whisper](https://github.com/openai/whisper) transcription model. The results weren't great, especially handling the silences on each speaker recording corresponding to other speakers talking (sometime there are more silences than actual speach).
+Like many D&D groups we used Discord for our sessions and we used the **[Craig bot](https://craig.chat/)** 🐻 to record the sessions. It provides separate audio tracks for each speaker (multi-track recording) – a feature that proved crucial later on. My first attempts, however, involved manually chunking the audio using tools like Audacity and trying the original [Whisper](https://github.com/openai/whisper) transcription model. The results weren't ideal, especially with the long silences present in individual speaker tracks (often, these silences, where other speakers were active, constituted more time than actual speech within a given chunk).
 
-Discovering **[WhisperX](https://github.com/m-bain/whisperX)** was a significant step forward. My initial experiments focused on simplifying the input by using a *merged* audio track and leveraging WhisperX's built-in diarization (`--diarize`) to separate speakers. Unfortunately, I found this approach yielded lower transcription accuracy compared to using the separate tracks from Craig. Furthermore, the automatic speaker identification often wasn't reliable enough for the clean, speaker-attributed script I needed.
+Checking for better models, I discovered **[WhisperX](https://github.com/m-bain/whisperX)**. My initial experiments focused on simplifying the input by using a *merged* audio track and leveraging WhisperX's built-in diarization (`--diarize`) to separate speakers. Unfortunately, even after several rounds of parameter fine-tuning, it often failed to identify speakers correctly, which was a crucial requirement for the automated pipeline I envisioned.
 
-This led me back to using the individual speaker tracks. Processing these separately gave much clearer transcriptions. At this stage, the process involved several independent Python scripts: one to merge and detect silence for chunking points, another to reassemble the script after transcription, and finally, manually prompting Large Language Models (LLMs) to generate summaries or even pre-novelized versions of the sessions.
+This led me back to using the individual speaker tracks. Processing these separately gave much clearer transcriptions, as WhisperX appeared to handle the extensive silences within these tracks more effectively than the original Whisper model had in my earlier tests. However, a new challenge arose: due to these same long silences, WhisperX's word-level timestamp alignment was sometimes inaccurate. This, in turn, led to poor temporal synchronization when attempting to merge the dialogues from different speaker tracks into a cohesive script, which led to a misleading understanding of the temporal continuum by the LLM and poor restitution of the actual events.
 
-While functional for personal use, this multi-script, manual process was cumbersome. I wanted a fully automated pipeline that could run right after a session, delivering not just a transcript but potentially those initial LLM outputs automatically.
+To address this, I developed a custom script to process WhisperX's JSON output, detect timestamp inconsistencies (like words with improbable durations or gaps), and correct them using a home-made heuristic. This correction step became a cornerstone. My workflow evolved into a pipeline of several independent Python scripts: one to analyze the combined audio for silence and then chunk the individual speaker tracks using common cut points (ensuring temporal consistency), another for the WhisperX JSON correction, one more to reassemble the transcribed chunks into a full script, and finally, manually prompting Large Language Models (LLMs) to generate summaries or even pre-novelized versions of the sessions.
 
-Realizing others might have similar goals – whether for novel writing, creating campaign summaries, session recaps for players, or other creative uses – the idea formed to transform these scripts into a more robust, automated, and shareable library.
+While functional for my own use, this multi-script, manual process was cumbersome. I wanted a fully automated pipeline that I could run right after each session, delivering the LLM outputs automatically.
 
-That's where this version of EchoScribe comes from. It has been significantly refactored and improved from those initial scripts into a structured, installable Python library (`echoscribe`) with considerable assistance from Large Language Models (Gemini 2.5 Pro, GPT-4o, and Claude 3.7 Sonnet*). The goal of this LLM-guided refactoring was to consolidate the steps, enhance robustness, add proper error handling, improve maintainability through modern Python practices, incorporate unit testing, increase usability, and prepare the code for open-sourcing on GitHub. The development involved an iterative process of generation, detailed review, and refinement.
+Realizing others might have similar goals – whether for creating campaign summaries, session recaps for players, or other creative uses – the idea formed to transform these scripts not only into a personal automated pipeline but into a more robust, automated, and shareable library.
+
+That's where this version of EchoScribe comes from. It has been significantly refactored and improved from those initial scripts into a structured, installable Python library (`echoscribe`) with considerable assistance from Large Language Models (such as Gemini 2.5 Pro, GPT-4o, and Claude 3.5 Sonnet*). The goal of this LLM-guided refactoring was to consolidate the steps, enhance robustness, add proper error handling, improve maintainability through modern Python practices, incorporate unit testing, increase usability, and prepare the code for open-sourcing on GitHub. The development involved an iterative process of code generation, detailed review, and refinement, often guided by the LLMs.
+
 
 ---
 
 ## 💡 Future Directions
 
 ### Next building block
--   [ ] **LLM Integration:** Summarization, narrative generation, character dialogue extraction through LLM API.
 -   [ ] **LLM Integration:** Summarization, narrative generation, character dialogue extraction through LLM API.
 -   [ ] **Pipeline Running Example:** Find audio sample to allow pipeline running for testing.
   
