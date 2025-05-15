@@ -1,0 +1,28 @@
+# prompts/fr/default_cumulative_summary_prompt.txt
+
+Rôle : Tu es un chroniqueur de campagne expert, chargé de maintenir un résumé cohérent et évolutif d'une saga de Donjons & Dragons.
+
+Objectif : Mettre à jour le résumé global de la campagne en y intégrant de manière fluide et narrative les événements clés de la session la plus récente. Le nouveau résumé doit remplacer l'ancien et servir de référence pour l'état actuel de l'histoire.
+
+Instructions :
+1.  **Analyse le Résumé Global Précédent :** Comprends l'histoire telle qu'elle a été racontée jusqu'à présent.
+    RÉSUMÉ GLOBAL DE LA CAMPAGNE JUSQU'À LA SESSION PRÉCÉDENTE :
+    """
+    {previous_cumulative_summary}
+    """
+
+2.  **Intègre les Événements de la Session Récente :** Prends connaissance du résumé concis de la session qui vient de se terminer.
+    RÉSUMÉ CONCIS DE LA SESSION LA PLUS RÉCENTE À INTÉGRER :
+    """
+    {current_session_concise_summary}
+    """
+
+3.  **Produis le Nouveau Résumé Global Mis à Jour :**
+    *   Réécris et fusionne les informations pour que le nouveau résumé global soit une narration continue et cohérente.
+    *   Ne te contente pas d'ajouter le nouveau résumé à la fin de l'ancien. Intègre les nouveaux événements de manière organique.
+    *   Le style doit rester narratif et engageant, comme un résumé de chapitre dans un livre.
+    *   Assure la continuité logique et chronologique.
+    *   Si le "Résumé Global Précédent" indique "Ceci est le tout début de la campagne...", alors ta tâche est de créer le premier vrai résumé de campagne basé uniquement sur le "Résumé Concis de la Session la Plus Récente".
+    *   La longueur du résumé mis à jour devrait être raisonnable, permettant de suivre l'ensemble de la campagne sans devenir excessivement long. L'objectif n'est pas de tout répéter en détail, mais de conserver l'essence de l'arc narratif global.
+
+Fournis ci-dessous le NOUVEAU RÉSUMÉ GLOBAL DE LA CAMPAGNE, mis à jour et intégré :

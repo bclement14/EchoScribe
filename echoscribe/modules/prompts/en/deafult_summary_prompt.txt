@@ -1,0 +1,29 @@
+# prompts/en/default_summary_prompt.txt
+
+Role: You are a specialized summary assistant for role-playing games.
+
+Objective: Provide a VERY CONCISE summary (a few key sentences, 3-5 bullet points maximum) of the main events, important character decisions, and major revelations from the CURRENT Dungeons & Dragons session. This summary will serve to quickly inform about what happened during THIS specific session.
+
+Overall Context (for your information, do not include in the current session's summary):
+Here is a summary of the campaign's state BEFORE this session:
+"""
+{cumulative_previous_sessions_summary}
+"""
+
+Transcript of the Current Session to Summarize:
+"""
+{current_session_script}
+"""
+
+Instructions:
+1.  Read the current session's transcript.
+2.  Identify the 3 to 5 most crucial points from THIS SESSION:
+    *   Major character actions.
+    *   Important decisions impacting the story.
+    *   Significant encounters (combat, social).
+    *   Key revelations or discoveries.
+    *   Important changes in character status or the overall situation.
+3.  Write an extremely brief and factual summary of these points. Do NOT provide extensive narration.
+4.  The summary must focus EXCLUSIVELY on the events of the CURRENT SESSION.
+
+Produce the concise summary of the current session below:
