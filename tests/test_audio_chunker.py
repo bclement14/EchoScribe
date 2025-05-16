@@ -6,7 +6,7 @@ import numpy as np
 import logging # Import logging if needed for caplog, though not used here yet
 
 # Import functions and config from the module to test
-from echoscribe.modules.audio_chunker import (
+from chronicleWeave.modules.audio_chunker import (
     get_audio_files_from_folder,
     determine_cut_points,
     write_cut_points,

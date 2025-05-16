@@ -1,5 +1,5 @@
 [project]
-name = "echoscribe"
+name = "chronicleWeave"
 version = "1.0.0" 
 description = "A modular audio processing pipeline for chunking, transcribing with WhisperX, and producing readable scripts."
 authors = [

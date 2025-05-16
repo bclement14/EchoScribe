@@ -1,4 +1,4 @@
-# echoscribe/pipeline.py
+# chronicleWeave/pipeline.py
 
 import os
 import subprocess
@@ -66,7 +66,7 @@ class PipelineConfig:
     log_level: str = "INFO"
 
     # External Tools Config
-    whisperx_docker_image: str = "echoscribe-whisperx"
+    whisperx_docker_image: str = "chronicleWeave-whisperx"
 
     # Module Specific Configs
     chunking_config: ChunkingConfig = field(default_factory=lambda: DEFAULT_CHUNKING_CONFIG)
@@ -110,7 +110,7 @@ class PipelineConfig:
         return f"{self.__class__.__name__}({', '.join(parts)})"
 
 # --- Logger Setup ---
-log = logging.getLogger("echoscribe.pipeline") # Specific logger for this module
+log = logging.getLogger("chronicleWeave.pipeline") # Specific logger for this module
 
 # --- Helper Functions ---
 
@@ -369,7 +369,7 @@ def run_pipeline(
     # __version__ might not be globally defined if not installed as a package
     try: version_info = __version__
     except NameError: version_info = "unknown"
-    log.info(f"Initializing echoscribe pipeline (v{version_info})...")
+    log.info(f"Initializing chronicleWeave pipeline (v{version_info})...")
 
     # --- Configuration Merging Logic ---
     try:
@@ -671,7 +671,7 @@ def run_pipeline(
     else:
         log.error(f"☠️ Pipeline FAILED after executing steps: {steps_executed}. Check logs for critical errors.")
         # Re-raise a generic error to signal failure to the caller if used programmatically
-        raise RuntimeError("Echoscribe pipeline failed during execution.")
+        raise RuntimeError("chronicleWeave pipeline failed during execution.")
 
 # Example of interactive usage (uncomment to run directly)
 # if __name__ == "__main__":
@@ -679,7 +679,7 @@ def run_pipeline(
 #     # e.g., run_pipeline(base_path="./my_dnd_session_audio")
 #     #
 #     # To test LLM step, ensure GEMINI_API_KEY is in your .env or environment
-#     # And that `echoscribe/modules/prompts/en/default_summary_prompt.txt` (etc.) exist.
+#     # And that `chronicleWeave/modules/prompts/en/default_summary_prompt.txt` (etc.) exist.
 #
 #     # Minimal run for testing:
 #     # Create dummy files for testing if you don't want to run all steps.

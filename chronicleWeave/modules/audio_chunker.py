@@ -1,4 +1,4 @@
-# echoscribe/modules/treat_flac_tracks.py
+# chronicleWeave/modules/treat_flac_tracks.py
 
 import logging
 import numpy as np

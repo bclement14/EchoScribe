@@ -1,4 +1,4 @@
-# echoscribe/modules/merge_speaker_entries.py
+# chronicleWeave/modules/merge_speaker_entries.py
 
 import logging
 import re
@@ -149,7 +149,7 @@ def run_merge_speakers_example():
     # Setup basic logging for the example run
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     # Ensure the module's logger also uses this level for the example
-    logging.getLogger("echoscribe.modules.merge_speaker_entries").setLevel(logging.INFO)
+    logging.getLogger("chronicleWeave.modules.merge_speaker_entries").setLevel(logging.INFO)
 
     # Define test paths relative to current execution (or specify absolute)
     base_test_dir = Path("./temp_mergespeakers_test_v2") # Use unique dir name
