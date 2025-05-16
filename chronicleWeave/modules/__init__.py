@@ -1,4 +1,4 @@
-# chronicleWeave/modules/__init__.py
+# chronicleweave/modules/__init__.py
 
 from . import audio_chunker 
 from . import whisperx_corrector_core 

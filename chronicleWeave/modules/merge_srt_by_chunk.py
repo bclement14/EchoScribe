@@ -1,4 +1,4 @@
-# chronicleWeave/modules/merge_srt_by_chunk.py
+# chronicleweave/modules/merge_srt_by_chunk.py
 
 import logging
 from pathlib import Path

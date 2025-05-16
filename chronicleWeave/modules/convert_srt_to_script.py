@@ -1,4 +1,4 @@
-# chronicleWeave/modules/convert_srt_to_script.py
+# chronicleweave/modules/convert_srt_to_script.py
 
 import re
 import logging

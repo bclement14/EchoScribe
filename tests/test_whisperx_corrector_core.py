@@ -8,7 +8,7 @@ from typing import List, Dict, Any
 from numbers import Number
 
 # Import the module and specific functions/classes to test
-from chronicleWeave.modules.whisperx_corrector_core import (
+from chronicleweave.modules.whisperx_corrector_core import (
     WhisperXCorrectorConfig,
     WordToken,
     Segment,

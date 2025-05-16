@@ -1,4 +1,4 @@
-# chronicleWeave/modules/llm_processor.py
+# chronicleweave/modules/llm_processor.py
 
 import os
 import logging
@@ -225,7 +225,7 @@ def _call_gemini_api(
         raise RuntimeError(f"Gemini API call for '{model_name}' failed unexpectedly: {e}") from e
 
 if TYPE_CHECKING:
-    from chronicleWeave.pipeline import PipelineConfig
+    from chronicleweave.pipeline import PipelineConfig
 else:
     @dataclass
     class PipelineConfig:

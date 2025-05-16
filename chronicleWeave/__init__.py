@@ -1,4 +1,4 @@
-# chronicleWeave/__init__.py
+# chronicleweave/__init__.py
 
 from . import pipeline
 from .pipeline import run_pipeline

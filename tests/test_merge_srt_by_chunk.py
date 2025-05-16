@@ -7,7 +7,7 @@ from datetime import timedelta
 import logging
 
 # Import the function and config to test
-from chronicleWeave.modules.merge_srt_by_chunk import (
+from chronicleweave.modules.merge_srt_by_chunk import (
     merge_srt_by_chunk,
     parse_srt_filename,
     load_srt_file,

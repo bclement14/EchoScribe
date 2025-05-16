@@ -5,7 +5,7 @@ from pathlib import Path
 import logging # Import logging to potentially capture logs if needed
 
 # Import the function to test
-from chronicleWeave.modules.convert_srt_to_script import srt_to_script
+from chronicleweave.modules.convert_srt_to_script import srt_to_script
 
 # Define sample SRT content
 SAMPLE_SRT_CONTENT = """1

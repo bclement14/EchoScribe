@@ -1,4 +1,4 @@
-# chronicleWeave/modules/convert_json_to_srt.py
+# chronicleweave/modules/convert_json_to_srt.py
 
 import os
 import json

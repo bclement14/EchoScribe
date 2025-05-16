@@ -64,11 +64,11 @@ ChronicleWeave leverages the powerful **[WhisperX](https://github.com/m-bain/whi
 2.  **Configure GPU Access (Recommended):** For significantly faster transcription, ensure Docker can access your NVIDIA GPU. See [NVIDIA Container Toolkit Installation Guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html).
 3.  **Build the Image:** From the project root directory (containing the `Dockerfile`), run:
     ```bash
-    docker build -t chronicleWeave-whisperx .
+    docker build -t chronicleweave-whisperx .
     ```
     _(This uses the included Dockerfile based on official NVIDIA CUDA images and installs the necessary WhisperX version)._
 
-Once built, the `run_pipeline` function will use the `chronicleWeave-whisperx` image automatically for Step 2.
+Once built, the `run_pipeline` function will use the `chronicleweave-whisperx` image automatically for Step 2.
 
 ---
 
@@ -77,8 +77,8 @@ Once built, the `run_pipeline` function will use the `chronicleWeave-whisperx` i
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/bclement14/chronicleWeave.git
-cd chronicleWeave
+git clone https://github.com/bclement14/chronicleweave.git
+cd chronicleweave
 ```
 
 ### 2. Create Virtual Environment (Recommended)
@@ -110,7 +110,7 @@ pip install .
 Build the Docker image required by the pipeline once:
 
 ```bash
-docker build -t chronicleWeave-whisperx .
+docker build -t chronicleweave-whisperx .
 ```
 
 _(Ensure the Dockerfile is present in the project root)_
@@ -132,7 +132,7 @@ your_session_name/
 Create a Python script (e.g., `process_session.py`) or use an interactive Python session (like IPython/Jupyter):
 
 ```python
-from chronicleWeave.pipeline import run_pipeline
+from chronicleweave.pipeline import run_pipeline
 from pathlib import Path
 
 # Define the path to your session directory
@@ -164,7 +164,7 @@ print(f"Pipeline processing finished for {session_path.name}!")
 
 The `run_pipeline` function executes the following steps (configurable via `steps_to_run`):
 
-| Step | Module (`chronicleWeave.modules.*`) | Action                       | Output Location (Default)        |
+| Step | Module (`chronicleweave.modules.*`) | Action                       | Output Location (Default)        |
 | :--- | :---------------------------------- | :--------------------------- | :------------------------------- |
 | 1    | `audio_chunker`                     | Chunk audio based on silence | `chunked_tracks/`                |
 | 2    | `pipeline` (internal Docker call)   | Transcribe chunks (WhisperX) | `wx_output/`                     |
@@ -183,13 +183,13 @@ Intermediate files are stored in subdirectories within your `base_path`. Final k
 If you need to run the WhisperX transcription step manually outside the pipeline:
 
 1.  Ensure your chunked audio files (e.g., `.flac`) are in a subdirectory (e.g., `chunked_tracks`).
-2.  Build the image: `docker build -t chronicleWeave-whisperx .`
+2.  Build the image: `docker build -t chronicleweave-whisperx .`
 3.  Run the container:
 
     ```bash
     # Example using 'find' (safer for many files/special chars) on Linux/macOS:
     docker run --gpus all -it --rm -v "$(pwd):/app" --ipc=host \
-      chronicleWeave-whisperx \
+      chronicleweave-whisperx \
       whisperx $(find chunked_tracks -name '*.flac' -printf '%p ') \
       --model large-v3 --language fr \
       --output_dir wx_output --output_format json \
@@ -201,7 +201,7 @@ If you need to run the WhisperX transcription step manually outside the pipeline
     ```bash
     # Example using shell wildcard (CAUTION: May fail with many files or special characters):
     docker run --gpus all -it --rm -v "$(pwd):/app" --ipc=host \
-      chronicleWeave-whisperx \
+      chronicleweave-whisperx \
       whisperx chunked_tracks/*.flac \
       --model large-v3 --language fr \
       --output_dir wx_output --output_format json \
@@ -259,7 +259,7 @@ While functional for my own use, this multi-script, manual process was cumbersom
 
 Realizing others might have similar goals – whether for creating campaign summaries, session recaps for players, or other creative uses – the idea formed to transform these scripts not only into a personal automated pipeline but into a more robust, automated, and shareable library.
 
-That's where this version of ChronicleWeave comes from. It has been significantly refactored and improved from those initial scripts into a structured, installable Python library (`chronicleWeave`) with considerable assistance from Large Language Models (such as Gemini 2.5 Pro, GPT-4o, and Claude 3.5 Sonnet\*). The goal of this LLM-guided refactoring was to consolidate the steps, enhance robustness, add proper error handling, improve maintainability through modern Python practices, incorporate unit testing, increase usability, and prepare the code for open-sourcing on GitHub. The development involved an iterative process of code generation, detailed review, and refinement, often guided by the LLMs.
+That's where this version of ChronicleWeave comes from. It has been significantly refactored and improved from those initial scripts into a structured, installable Python library (`chronicleweave`) with considerable assistance from Large Language Models (such as Gemini 2.5 Pro, GPT-4o, and Claude 3.5 Sonnet\*). The goal of this LLM-guided refactoring was to consolidate the steps, enhance robustness, add proper error handling, improve maintainability through modern Python practices, incorporate unit testing, increase usability, and prepare the code for open-sourcing on GitHub. The development involved an iterative process of code generation, detailed review, and refinement, often guided by the LLMs.
 
 ---
 
