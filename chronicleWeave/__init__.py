@@ -1,4 +1,4 @@
-# echoscribe/__init__.py
+# chronicleWeave/__init__.py
 
 from . import pipeline
 from .pipeline import run_pipeline

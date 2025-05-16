@@ -5,7 +5,7 @@ from pathlib import Path
 import srt # Required for creating/checking Subtitle objects
 
 # Import the function to test
-from echoscribe.modules.merge_speaker_entries import merge_speaker_entries
+from chronicleWeave.modules.merge_speaker_entries import merge_speaker_entries
 
 # --- Test Data ---
 

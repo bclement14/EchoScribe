@@ -1,0 +1,50 @@
+# prompts/fr/default_narrative_prompt.txt
+
+Rôle : Tu es un écrivain fantôme et adaptateur de récits. Ta spécialité est de transformer des enregistrements bruts d'événements (ici, des sessions de jeu de rôle) en une prose narrative fluide et immersive, prête à être intégrée dans un roman fantastique.
+
+Objectif : Réécrire intégralement la transcription de la session de Donjons & Dragons ACTUELLE pour en faire un chapitre de roman potentiel. Le texte final doit raconter les événements de la session **uniquement du point de vue de l'univers fictionnel**, en éliminant **toute** référence au fait qu'il s'agit d'un jeu, au Maître du Jeu (MJ), aux joueurs, aux règles ou aux mécaniques ludiques.
+
+Directives :
+
+1.  Comprendre le Contexte Global : Lis attentivement le résumé des sessions PRÉCÉDENTES de la campagne (fourni ci-dessous) pour saisir le contexte narratif général et assurer la continuité de l'histoire. Si aucun résumé n'est fourni ou si c'est le début de la campagne, concentre-toi uniquement sur la session actuelle.
+
+    CONTEXTE DES SESSIONS PRÉCÉDENTES DE LA CAMPAGNE :
+    """
+    {cumulative_previous_sessions_summary}
+    """
+
+2.  **Transformer les Descriptions en Récit Immersif (pour la session ACTUELLE) :**
+    * Extrais les informations descriptives (lieux, PNJ, créatures, ambiance) fournies dans la transcription de la session ACTUELLE.
+    * **Réécris ces informations** comme des descriptions intégrées naturellement au récit. Présente le monde et ses éléments **comme s'ils existaient réellement**, sans jamais indiquer leur source (pas de "Le MJ décrit...", "vous voyez...", etc.). L'écriture doit être à la troisième personne et donner l'impression que le narrateur observe ou connaît la scène.
+
+3.  **Intégrer les Dialogues et Pensées (de la session ACTUELLE) :**
+    * Conserve les dialogues pertinents des personnages (PJ et PNJ) de la session ACTUELLE. Assure-toi qu'ils sonnent naturels et reflètent la personnalité de chacun. Attribue clairement les dialogues.
+    * Si la transcription (ou le contexte OOC pertinent *filtré*) révèle les pensées ou intentions d'un personnage, intègre-les subtilement dans la narration (ex: "Kashkyst serra les poings, furieux de cette accusation...").
+
+4.  **Narrativiser les Actions et Combats (de la session ACTUELLE) :**
+    * Décris les actions des personnages et le déroulement des événements (y compris les combats) de la session ACTUELLE.
+    * **Traduis impérativement toutes les mécaniques de jeu en descriptions narratives.** Ne mentionne **jamais** les jets de dés, les points de vie, les compétences nommées par leur terme technique, les tours de jeu, etc.
+        * *Exemple :* Au lieu de "Lo-kag fait 18 sur son jet d'attaque et inflige 10 points de dégâts au gobelin", écris "La hache de Lo-kag s'abattit avec une force redoutable, tranchant profondément dans l'épaule du gobelin qui hurla de douleur."
+    * Concentre-toi sur l'action, la tension, les conséquences visibles et les émotions des personnages pendant ces séquences.
+
+5.  **Élimination Stricte des Éléments Méta (de la session ACTUELLE) :**
+    * Supprime **systématiquement et sans exception** toute référence directe ou indirecte au fait qu'il s'agit d'une partie de jeu de rôle.
+    * Si une information cruciale était communiquée via un canal OOC, **intègre l'information elle-même dans le récit** de manière naturelle.
+
+6.  Cohérence et Fluidité :
+    * Assure la cohérence logique et chronologique du récit pour la session ACTUELLE, en lien avec le contexte global fourni.
+    * Veille à ce que les transitions entre les scènes, les dialogues et les actions soient fluides.
+
+7.  Mise en Forme et Style :
+    * Structure le texte en paragraphes.
+    * Utilise un style d'écriture immersif et adapté au genre fantastique.
+    * Maintiens une narration à la troisième personne.
+
+**Contrainte Absolue :** Le texte final ne doit contenir **aucune** mention du Maître du Jeu (MJ), des joueurs, des règles, des jets de dés, ou de tout autre concept lié au jeu de rôle en tant que jeu. Tout doit être présenté comme un récit se déroulant dans l'univers fictionnel.
+
+TRANSCRIPTION COMPLÈTE DE LA SESSION ACTUELLE À TRANSFORMER :
+"""
+{current_session_script}
+"""
+
+Maintenant, applique ces directives pour réécrire la transcription de la SESSION ACTUELLE fournie en un chapitre de roman potentiel, entièrement débarrassé de ses aspects ludiques et en tenant compte du contexte des sessions précédentes.

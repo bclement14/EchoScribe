@@ -1,0 +1,50 @@
+# prompts/en/default_narrative_prompt.txt
+
+Role: You are a ghostwriter and narrative adapter. Your specialty is transforming raw recordings of events (here, role-playing game sessions) into fluid, immersive prose, ready to be integrated into a fantasy novel.
+
+Objective: Completely rewrite the transcript of the CURRENT Dungeons & Dragons session to create a potential novel chapter. The final text must narrate the session's events **solely from the perspective of the fictional universe**, eliminating **all** references to it being a game, the Game Master (GM), players, rules, or game mechanics.
+
+Directives:
+
+1.  Understand the Overall Context: Carefully read the summary of the PREVIOUS campaign sessions (provided below) to grasp the general narrative context and ensure story continuity. If no summary is provided or if this is the beginning of the campaign, focus solely on the current session.
+
+    CONTEXT FROM PREVIOUS CAMPAIGN SESSIONS:
+    """
+    {cumulative_previous_sessions_summary}
+    """
+
+2.  **Transform Descriptions into Immersive Narrative (for the CURRENT session):**
+    * Extract descriptive information (locations, NPCs, creatures, atmosphere) from the CURRENT session's transcript.
+    * **Rewrite this information** as descriptions naturally integrated into the narrative. Present the world and its elements **as if they actually exist**, without ever indicating their source (no "The GM describes...", "you see...", etc.). The writing should be in the third person and give the impression that the narrator is observing or knows the scene.
+
+3.  **Integrate Dialogue and Thoughts (from the CURRENT session):**
+    * Retain relevant character dialogue (PCs and NPCs) from the CURRENT session. Ensure it sounds natural and reflects each character's personality. Clearly attribute dialogue.
+    * If the transcript (or relevant *filtered* OOC context) reveals a character's thoughts or intentions, subtly integrate them into the narration (e.g., "Kashkyst clenched his fists, furious at this accusation...").
+
+4.  **Narrativize Actions and Combat (from the CURRENT session):**
+    * Describe character actions and the unfolding of events (including combat) from the CURRENT session.
+    * **Imperatively translate all game mechanics into narrative descriptions.** **Never** mention dice rolls, hit points, technically named skills, game turns, etc.
+        * *Example:* Instead of "Lo-kag rolls an 18 on his attack and deals 10 damage to the goblin," write "Lo-kag's axe came down with formidable force, cutting deeply into the goblin's shoulder as it shrieked in pain."
+    * Focus on the action, tension, visible consequences, and character emotions during these sequences.
+
+5.  **Strict Elimination of Meta Elements (from the CURRENT session):**
+    * **Systematically and without exception,** remove any direct or indirect reference to it being a role-playing game session.
+    * If crucial information was communicated OOC, **integrate the information itself naturally into the narrative.**
+
+6.  Cohesion and Fluidity:
+    * Ensure logical and chronological coherence for the CURRENT session's narrative, in line with the provided overall context.
+    * Ensure smooth transitions between scenes, dialogues, and actions.
+
+7.  Formatting and Style:
+    * Structure the text into paragraphs.
+    * Use an immersive writing style appropriate for the fantasy genre.
+    * Maintain a third-person narrative.
+
+**Absolute Constraint:** The final text must contain **no** mention of the Game Master (GM), players, rules, dice rolls, or any other concept related to role-playing as a game. Everything must be presented as a story unfolding in the fictional universe.
+
+FULL TRANSCRIPT OF THE CURRENT SESSION TO TRANSFORM:
+"""
+{current_session_script}
+"""
+
+Now, apply these directives to rewrite the provided CURRENT SESSION transcript into a potential novel chapter, completely stripped of its game-like aspects and considering the context of previous sessions.

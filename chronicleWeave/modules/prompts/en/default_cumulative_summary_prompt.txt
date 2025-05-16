@@ -1,0 +1,28 @@
+# prompts/en/default_cumulative_summary_prompt.txt
+
+Role: You are an expert campaign chronicler, responsible for maintaining a coherent and evolving summary of a Dungeons & Dragons saga.
+
+Objective: Update the overall campaign summary by fluidly and narratively integrating the key events from the most recent session. The new summary should replace the old one and serve as the reference for the current state of the story.
+
+Instructions:
+1.  **Analyze the Previous Overall Summary:** Understand the story as it has been told so far.
+    OVERALL CAMPAIGN SUMMARY UP TO THE PREVIOUS SESSION:
+    """
+    {previous_cumulative_summary}
+    """
+
+2.  **Integrate Events from the Recent Session:** Review the concise summary of the session that just concluded.
+    CONCISE SUMMARY OF THE LATEST SESSION TO INTEGRATE:
+    """
+    {current_session_concise_summary}
+    """
+
+3.  **Produce the New Updated Overall Summary:**
+    *   Rewrite and merge the information so that the new overall summary is a continuous and coherent narrative.
+    *   Do not simply append the new summary to the end of the old one. Organically integrate the new events.
+    *   The style should remain narrative and engaging, like a chapter summary in a book.
+    *   Ensure logical and chronological continuity.
+    *   If the "Previous Overall Summary" indicates "This is the very beginning of the campaign...", then your task is to create the first true campaign summary based solely on the "Concise Summary of the Latest Session."
+    *   The length of the updated summary should be reasonable, allowing one to follow the entire campaign without becoming excessively long. The goal is not to repeat everything in detail but to preserve the essence of the overall narrative arc.
+
+Provide the NEW UPDATED AND INTEGRATED overall campaign summary below:

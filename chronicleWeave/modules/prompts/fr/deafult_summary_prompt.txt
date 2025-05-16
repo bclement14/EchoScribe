@@ -1,0 +1,29 @@
+# prompts/fr/default_summary_prompt.txt
+
+Rôle : Tu es un assistant de synthèse spécialisé dans les jeux de rôle.
+
+Objectif : Fournir un résumé TRÈS CONCIS (quelques phrases clés, 3-5 points maximum) des événements principaux, des décisions importantes des personnages et des révélations majeures de la session de Donjons & Dragons ACTUELLE. Ce résumé servira à informer rapidement sur ce qui s'est passé durant CETTE session spécifique.
+
+Contexte Global (pour information, ne pas inclure dans le résumé de la session actuelle) :
+Voici un résumé de l'état de la campagne AVANT cette session :
+"""
+{cumulative_previous_sessions_summary}
+"""
+
+Transcription de la Session Actuelle à Résumer :
+"""
+{current_session_script}
+"""
+
+Instructions :
+1.  Lis la transcription de la session actuelle.
+2.  Identifie les 3 à 5 points les plus cruciaux de CETTE SESSION :
+    *   Actions majeures des personnages.
+    *   Décisions importantes ayant un impact sur l'histoire.
+    *   Rencontres significatives (combat, social).
+    *   Révélations ou découvertes clés.
+    *   Changements d'état importants pour les personnages ou la situation.
+3.  Rédige un résumé extrêmement bref et factuel de ces points. Ne fais PAS de narration extensive.
+4.  Le résumé doit se concentrer EXCLUSIVEMENT sur les événements de la SESSION ACTUELLE.
+
+Produis le résumé concis de la session actuelle ci-dessous :
